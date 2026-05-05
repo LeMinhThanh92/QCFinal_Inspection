@@ -1,0 +1,66 @@
+[
+    {
+        "dept": "CUT",
+        "group": "CUT"
+    },
+    {
+        "dept": "ACI",
+        "group": "all"
+    },
+    {
+        "dept": "TAP",
+        "group": "all"
+    },
+    {
+        "dept": "AIE",
+        "group": "all"
+    },
+    {
+        "dept": "FAB",
+        "group": "FB"
+    },
+    {
+        "dept": "QCF",
+        "group": "FB"
+    },
+    {
+        "dept": "FIN",
+        "group": "FB"
+    },
+    {
+        "dept": "EMB",
+        "group": "DECORATE"
+    },
+    {
+        "dept": "HEA",
+        "group": "DECORATE"
+    },
+    {
+        "dept": "QCI",
+        "group": "DECORATE"
+    },
+    {
+        "dept": "BMA",
+        "group": "DECORATE"
+    },
+    {
+        "dept": "BPP",
+        "group": "DECORATE"
+    },
+    {
+        "dept": "BLA",
+        "group": "DECORATE"
+    },
+    {
+        "dept": "BPL",
+        "group": "DECORATE"
+    },
+    {
+        "dept": "QCB",
+        "group": "DECORATE"
+    },
+    {
+        "dept": "CTBIE",
+        "group": "DECORATE"
+    }
+]

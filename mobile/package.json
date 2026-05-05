@@ -1,0 +1,24 @@
+{
+  "name": "decoration-scan-mobile",
+  "version": "1.0.0",
+  "description": "Capacitor Android wrapper for Decoration Scan Output",
+  "scripts": {
+    "sync": "npx cap sync android",
+    "open": "npx cap open android",
+    "build-web": "cd ../frontend && npm run build:production",
+    "build-android": "npm run build-web && npx cap sync android",
+    "run-android": "npx cap run android"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor-community/barcode-scanner": "^4.0.1",
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

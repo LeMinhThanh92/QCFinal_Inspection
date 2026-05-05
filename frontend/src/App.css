@@ -1,0 +1,87 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+body {
+    font-size: 14px !important;
+}
+
+#root {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+::-webkit-scrollbar-track:horizontal {
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #B5BBC6;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.scrollY::-webkit-scrollbar {
+    display: block;
+    width: 6px !important;
+    height: 6px;
+}
+
+.scrollY::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+.scrollY::-webkit-scrollbar-thumb {
+    background-color: #B5BBC6;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.MuiAutocomplete-clearIndicator {
+    display: none !important;
+}
+
+.bounce {
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+.Mui-disabled {
+    opacity: 0.8 !important;
+}
