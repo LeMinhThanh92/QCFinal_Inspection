@@ -26,6 +26,22 @@ const SvgSampleRoom = () => (
     </svg>
 );
 
+const SvgInspection = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" width="100%" height="100%" style={{ overflow: 'visible' }}>
+        <rect x="20" y="25" width="60" height="70" rx="4" fill="#f4f6f7" stroke="#2c3e50" strokeWidth="3" />
+        <line x1="30" y1="40" x2="70" y2="40" stroke="#3498db" strokeWidth="3" strokeLinecap="round" />
+        <line x1="30" y1="55" x2="70" y2="55" stroke="#ecf0f1" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="35" cy="55" r="3" fill="#27ae60" />
+        <line x1="30" y1="70" x2="70" y2="70" stroke="#ecf0f1" strokeWidth="3" strokeLinecap="round" />
+        <line x1="32" y1="68" x2="38" y2="72" stroke="#e74c3c" strokeWidth="2" strokeLinecap="round" />
+        <line x1="38" y1="68" x2="32" y2="72" stroke="#e74c3c" strokeWidth="2" strokeLinecap="round" />
+        <path d="M 60 75 L 85 100 L 90 95 L 65 70 Z" fill="#95a5a6" stroke="#2c3e50" strokeWidth="2" />
+        <circle cx="55" cy="65" r="15" fill="none" stroke="#2c3e50" strokeWidth="3" />
+        <circle cx="55" cy="65" r="10" fill="#3498db" opacity="0.3" />
+        <text x="50" y="115" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="11" fill="#2c3e50" textAnchor="middle">INSPECTION CTQ</text>
+    </svg>
+);
+
 export const PageNavigation = () => {
     const navigate = useNavigate();
     const { t } = useLocale();
@@ -34,6 +50,7 @@ export const PageNavigation = () => {
 
     const menuItems = [
         { path: "/sample-room", dept: "SAMPLE ROOM", icon: <SvgSampleRoom /> },
+        { path: "/inspection", dept: "INSPECTION", icon: <SvgInspection /> },
     ];
 
     const handleSelectDepartment = (item: any) => {
