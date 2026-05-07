@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Decoration Scan</string>
-    <string name="title_activity_main">Decoration Scan</string>
-    <string name="package_name">com.trax.decorationscan</string>
-    <string name="custom_url_scheme">com.trax.decorationscan</string>
+    <string name="app_name">QCFinal Inspection</string>
+    <string name="title_activity_main">QCFinal Inspection</string>
+    <string name="package_name">com.trax.sampleroomdigital</string>
+    <string name="custom_url_scheme">com.trax.sampleroomdigital</string>
 </resources>
