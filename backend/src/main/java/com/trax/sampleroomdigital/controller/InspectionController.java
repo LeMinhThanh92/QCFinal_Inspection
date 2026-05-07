@@ -2,6 +2,7 @@ package com.trax.sampleroomdigital.controller;
 
 import com.trax.sampleroomdigital.dto.ApiResponse;
 import com.trax.sampleroomdigital.service.InspectionService;
+import com.trax.sampleroomdigital.service.SubmitService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,9 +17,11 @@ import java.util.Map;
 public class InspectionController {
 
     private final InspectionService inspectionService;
+    private final SubmitService submitService;
 
-    public InspectionController(InspectionService inspectionService) {
+    public InspectionController(InspectionService inspectionService, SubmitService submitService) {
         this.inspectionService = inspectionService;
+        this.submitService = submitService;
     }
 
     @GetMapping("/search-po")
@@ -212,5 +215,57 @@ public class InspectionController {
                 .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8")
                 .body(jsonPayload.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Submit inspection data to Pivot88/TRANS4M via SFTP.
+     * Uploads all images to /incoming/images/ first, then JSON to /incoming/.
+     *
+     * C# equivalent: Btnsubmit2_Click → CreateJSonFileAQLoutbound_Trans4m_CTQ
+     *
+     * Request Body:
+     * {
+     *   "poNumber": "0902104135",
+     *   "planRef": "JOB-001",
+     *   "recNo": "12345",
+     *   "inspectorId": "EMP001"
+     * }
+     */
+    @PostMapping("/submit-to-pivot")
+    public ApiResponse<Map<String, Object>> submitToPivot(
+            @org.springframework.web.bind.annotation.RequestBody Map<String, String> body
+    ) {
+        Map<String, Object> result = submitService.submitToPivot(
+            body.getOrDefault("poNumber", ""),
+            body.getOrDefault("planRef", ""),
+            body.getOrDefault("recNo", ""),
+            body.getOrDefault("inspectorId", "")
+        );
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * Clear (soft-delete) a PO by appending "(Fail)" to its PONo in InlineFGsWHPlanBook.
+     *
+     * C# equivalent: Btnclearpo_Click
+     *   UPDATE InlineFGsWHPlanBook SET PONo='[PO](Fail)' WHERE PlanID=? AND JobNo=? AND PONo=?
+     *
+     * Request Body:
+     * {
+     *   "poNumber": "0902104135",
+     *   "planId": "12345",
+     *   "planRef": "JOB-001"
+     * }
+     */
+    @PostMapping("/clear-po")
+    public ApiResponse<Map<String, Object>> clearPo(
+            @org.springframework.web.bind.annotation.RequestBody Map<String, String> body
+    ) {
+        Map<String, Object> result = inspectionService.clearPo(
+            body.getOrDefault("poNumber", ""),
+            body.getOrDefault("planId", ""),
+            body.getOrDefault("planRef", "")
+        );
+        return ApiResponse.success(result);
     }
 }

@@ -12,6 +12,7 @@ import { useAppStore } from '@/utils/states/useAppStore';
 import { useAuth } from '@/utils/context/AuthProvider';
 import { toast } from '@/utils/states/state';
 import ConfirmDialog from '@/components/Dialog/ConfirmDialog';
+import { VERSION } from '@/components/constants/version';
 
 export const AppbarInspection: React.FC = () => {
     const theme = useTheme();
@@ -206,7 +207,8 @@ export const AppbarInspection: React.FC = () => {
         <Box
             sx={{
                 display: 'flex',
-                alignItems: 'center',
+                flexDirection: { xs: 'column', lg: 'row' },
+                alignItems: { xs: 'stretch', lg: 'center' },
                 justifyContent: 'space-between',
                 px: 2,
                 py: 1.5,
@@ -215,99 +217,139 @@ export const AppbarInspection: React.FC = () => {
                 gap: 2,
             }}
         >
-            {/* Left: Title + Search */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Typography
-                    sx={{
-                        fontWeight: 800,
-                        fontSize: '20px',
-                        color: (t) => t.color?.text?.o1 || '#1B2722',
-                        whiteSpace: 'nowrap',
-                    }}
-                >
-                    QC Final Inspection
-                </Typography>
-
-                <Tooltip title={isPoLoaded ? 'Đổi AQL sẽ reset PO hiện tại' : 'Chọn AQL Level trước khi Load PO'} arrow>
-                    <ToggleButtonGroup
-                        value={aqlLevel}
-                        exclusive
-                        onChange={handleAqlChange}
-                        size="small"
+            {/* Left: Title + Search Container */}
+            <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', xl: 'row' }, 
+                alignItems: { xs: 'stretch', xl: 'center' }, 
+                gap: 2,
+                width: '100%'
+            }}>
+                {/* ─── Title & Mobile User Info Row ─── */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography
                         sx={{
-                            backgroundColor: '#fff',
-                            height: '40px',
-                            '& .MuiToggleButton-root': {
-                                fontWeight: 600,
-                                px: 2,
-                                color: '#333',
-                                border: '1px solid #ccc',
-                                '&.Mui-selected': {
-                                    color: '#d32f2f',
-                                    backgroundColor: 'rgba(211, 47, 47, 0.1)',
-                                    borderColor: '#d32f2f',
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(211, 47, 47, 0.2)',
-                                    }
-                                },
-                                '&.Mui-disabled': {
-                                    opacity: 0.6,
-                                },
-                                '&.Mui-selected.Mui-disabled': {
-                                    color: '#d32f2f',
-                                    backgroundColor: 'rgba(211, 47, 47, 0.08)',
-                                }
-                            }
+                            fontWeight: 800,
+                            fontSize: { xs: '18px', sm: '20px' },
+                            color: (t) => t.color?.text?.o1 || '#1B2722',
+                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
                         }}
                     >
-                        <ToggleButton value="Regular orders (AQL 1.0, Level I)">REGULAR</ToggleButton>
-                        <ToggleButton value="Japan orders (AQL 1.0, Level II)">JAPAN</ToggleButton>
-                        <ToggleButton value="100%inspection">100%</ToggleButton>
-                    </ToggleButtonGroup>
-                </Tooltip>
+                        QC Final Inspection
+                        <Typography component="span" sx={{ fontSize: '11px', fontWeight: 700, color: '#666', backgroundColor: '#e0e0e0', px: 0.8, py: 0.2, borderRadius: 1 }}>
+                            {VERSION}
+                        </Typography>
+                    </Typography>
 
-                <TextField
-                    size="small"
-                    placeholder="Enter PO Number..."
-                    value={poInput}
-                    onChange={(e) => setPoInput(e.target.value)}
-                    sx={{
-                        width: 280,
-                        '& .MuiOutlinedInput-root': {
+                    {/* Show User Info on mobile right beside the title */}
+                    <Box sx={{ display: { xs: 'flex', lg: 'none' }, alignItems: 'center', gap: 0.5 }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '13px', color: (t: any) => t.color?.text?.o1 || '#1B2722', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {user?.account?.username}
+                        </Typography>
+                        <IconButton 
+                            onClick={() => logout()}
+                            sx={{ color: (t: any) => t.color?.error?.main || '#d32f2f', p: 0.5 }}
+                        >
+                            <LogoutIcon fontSize="small" />
+                        </IconButton>
+                    </Box>
+                </Box>
+
+                {/* ─── AQL Toggle (Scrollable on small screens) ─── */}
+                <Box sx={{ overflowX: 'auto', pb: { xs: 0.5, lg: 0 } }}>
+                    <Tooltip title={isPoLoaded ? 'Đổi AQL sẽ reset PO hiện tại' : 'Chọn AQL Level trước khi Load PO'} arrow>
+                        <ToggleButtonGroup
+                            value={aqlLevel}
+                            exclusive
+                            onChange={handleAqlChange}
+                            size="small"
+                            sx={{
+                                backgroundColor: '#fff',
+                                height: '40px',
+                                display: 'flex',
+                                flexWrap: 'nowrap',
+                                '& .MuiToggleButton-root': {
+                                    fontWeight: 600,
+                                    px: 2,
+                                    color: '#333',
+                                    border: '1px solid #ccc',
+                                    whiteSpace: 'nowrap',
+                                    '&.Mui-selected': {
+                                        color: '#d32f2f',
+                                        backgroundColor: 'rgba(211, 47, 47, 0.1)',
+                                        borderColor: '#d32f2f',
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(211, 47, 47, 0.2)',
+                                        }
+                                    },
+                                    '&.Mui-disabled': {
+                                        opacity: 0.6,
+                                    },
+                                    '&.Mui-selected.Mui-disabled': {
+                                        color: '#d32f2f',
+                                        backgroundColor: 'rgba(211, 47, 47, 0.08)',
+                                    }
+                                }
+                            }}
+                        >
+                            <ToggleButton value="Regular orders (AQL 1.0, Level I)">REGULAR</ToggleButton>
+                            <ToggleButton value="Japan orders (AQL 1.0, Level II)">JAPAN</ToggleButton>
+                            <ToggleButton value="100%inspection">100%</ToggleButton>
+                        </ToggleButtonGroup>
+                    </Tooltip>
+                </Box>
+
+                {/* ─── Search Bar Row ─── */}
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <TextField
+                        size="small"
+                        fullWidth
+                        placeholder="Enter PO Number..."
+                        value={poInput}
+                        onChange={(e) => setPoInput(e.target.value)}
+                        sx={{
+                            flex: 1,
+                            minWidth: { xl: 280 },
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: '4px',
+                                backgroundColor: (t) => t.color?.background?.o1 || '#fff',
+                            },
+                        }}
+                        InputProps={{
+                            startAdornment: <SearchIcon sx={{ color: (t) => t.color?.neutral?.o5 || '#989FB0', mr: 1 }} />,
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSearchPO();
+                        }}
+                    />
+
+                    <Button
+                        variant="contained"
+                        onClick={handleSearchPO}
+                        disabled={loading}
+                        sx={{
+                            textTransform: 'none',
                             borderRadius: '4px',
-                            backgroundColor: (t) => t.color?.background?.o1 || '#fff',
-                        },
-                    }}
-                    InputProps={{
-                        startAdornment: <SearchIcon sx={{ color: (t) => t.color?.neutral?.o5 || '#989FB0', mr: 1 }} />,
-                    }}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSearchPO();
-                    }}
-                />
-
-                <Button
-                    variant="contained"
-                    onClick={handleSearchPO}
-                    disabled={loading}
-                    sx={{
-                        textTransform: 'none',
-                        borderRadius: '4px',
-                        fontWeight: 700,
-                        px: 3,
-                        height: '40px',
-                        backgroundColor: (t) => t.color?.primary?.o5 || '#39B54A',
-                        '&:hover': {
-                            backgroundColor: (t) => t.color?.primary?.o6 || '#27A338',
-                        },
-                    }}
-                >
-                    {loading ? <CircularProgress size={22} color="inherit" /> : 'Load PO'}
-                </Button>
+                            fontWeight: 700,
+                            px: 3,
+                            height: '40px',
+                            whiteSpace: 'nowrap',
+                            backgroundColor: (t) => t.color?.primary?.o5 || '#39B54A',
+                            '&:hover': {
+                                backgroundColor: (t) => t.color?.primary?.o6 || '#27A338',
+                            },
+                        }}
+                    >
+                        {loading ? <CircularProgress size={22} color="inherit" /> : 'Load PO'}
+                    </Button>
+                </Box>
             </Box>
 
-            {/* Right: User Info + Logout */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Right: Desktop User Info + Logout */}
+            <Box sx={{ display: { xs: 'none', lg: 'flex' }, alignItems: 'center', gap: 2, flexShrink: 0 }}>
                 <Typography sx={{ fontWeight: 600, color: (t: any) => t.color?.text?.o1 || '#1B2722' }}>
                     {user?.account?.fullname || user?.account?.username}
                 </Typography>

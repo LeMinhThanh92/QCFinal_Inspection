@@ -211,8 +211,46 @@ export const saveAll_api = (data: SaveAllRequest) => {
     });
 };
 
+// ── Submit to Pivot88 (SFTP Upload) ──────────────────────────────
 
+export interface SubmitToPivotRequest {
+    poNumber: string;
+    planRef: string;
+    recNo: string;
+    inspectorId: string;
+}
 
+export interface SubmitToPivotResponse {
+    success: boolean;
+    message: string;
+    fileName?: string;
+    imagesUploaded?: number;
+    imagesFailed?: number;
+    totalImages?: number;
+}
 
+export const submitToPivot_api = (data: SubmitToPivotRequest) => {
+    return request({
+        url: '/api/inspection/submit-to-pivot',
+        method: 'POST',
+        data: data,
+    });
+};
+
+// ── Clear PO (mark as Fail) ──────────────────────────────────────
+
+export interface ClearPoRequest {
+    poNumber: string;
+    planId: string;
+    planRef: string;
+}
+
+export const clearPo_api = (data: ClearPoRequest) => {
+    return request({
+        url: '/api/inspection/clear-po',
+        method: 'POST',
+        data: data,
+    });
+};
 
 

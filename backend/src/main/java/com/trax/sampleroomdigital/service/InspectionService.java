@@ -1128,4 +1128,46 @@ public class InspectionService {
             return "{\"error\": \"Failed to generate JSON: " + e.getMessage() + "\"}";
         }
     }
+
+    /**
+     * Marks a PO as "(Fail)" in InlineFGsWHPlanBook table.
+     * <p>
+     * C# equivalent: Btnclearpo_Click (line 1574):
+     * <pre>
+     *   UPDATE DtradeProduction.dbo.InlineFGsWHPlanBook
+     *   SET PONo = '[poNumber](Fail)'
+     *   WHERE PlanID = [planId] AND JobNo = '[planRef]' AND PONo = '[poNumber]'
+     * </pre>
+     * <p>
+     * This effectively "soft-deletes" the inspection plan by appending "(Fail)" to the PO number,
+     * making it no longer match during lookups.
+     *
+     * @param poNumber The PO number
+     * @param planId   The Plan ID
+     * @param planRef  The Plan Reference (JobNo)
+     * @return Map with success/message
+     */
+    public Map<String, Object> clearPo(String poNumber, String planId, String planRef) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            String sql = "UPDATE DtradeProduction.dbo.InlineFGsWHPlanBook " +
+                         "SET PONo = ? " +
+                         "WHERE PlanID = ? AND JobNo = ? AND PONo = ?";
+            String failPo = poNumber + "(Fail)";
+            int rows = jdbcTemplate.update(sql, failPo, Integer.parseInt(planId), planRef, poNumber);
+
+            if (rows > 0) {
+                result.put("success", true);
+                result.put("message", "Đã clear PO: " + poNumber + " → " + failPo);
+                result.put("rowsAffected", rows);
+            } else {
+                result.put("success", false);
+                result.put("message", "Không tìm thấy record với PlanID=" + planId + ", JobNo=" + planRef + ", PONo=" + poNumber);
+            }
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "Lỗi: " + e.getMessage());
+        }
+        return result;
+    }
 }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
     Box, Tabs, Tab, Typography, Badge, Chip,
     SpeedDial, SpeedDialAction, SpeedDialIcon,
-    useTheme, Tooltip,
+    useTheme, Tooltip, CircularProgress, Backdrop,
 } from '@mui/material';
 
 // ── Icons ────────────────────────────────────────────
@@ -14,6 +14,10 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 // ── Components ───────────────────────────────────────
 import { AppbarInspection } from './components/AppbarInspection';
@@ -29,7 +33,7 @@ import {
     MEASUREMENTS_ITEMS,
 } from './components/ChecklistConstants';
 import { useAppStore } from '@/utils/states/useAppStore';
-import { clearImages_api, exportTrans4mJson_api, saveAll_api } from '@/network/urls/inspection_api';
+import { clearImages_api, exportTrans4mJson_api, saveAll_api, submitToPivot_api, SubmitToPivotResponse, clearPo_api } from '@/network/urls/inspection_api';
 import { toast } from '@/utils/states/state';
 import ConfirmDialog from '@/components/Dialog/ConfirmDialog';
 
@@ -66,13 +70,24 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
 export const PageInspection: React.FC = () => {
     const theme = useTheme();
     const [activeTab, setActiveTab] = useState(0);
-    const { poInfo, images, removeImage, checklistStatuses, setPoInfo } = useAppStore();
+    const { poInfo, images, removeImage, checklistStatuses, setPoInfo, clearAllData, setAqlLevel } = useAppStore();
     const factory = useAppStore(state => state.factory);
     const aqlLevel = useAppStore(state => state.aqlLevel);
 
     const [confirmAction, setConfirmAction] = useState<{open: boolean, title: string, content: string, actionId: string | null}>({
         open: false, title: '', content: '', actionId: null
     });
+
+    // ── Result dialog for SFTP submit feedback ──
+    const [resultDialog, setResultDialog] = useState<{
+        open: boolean;
+        type: 'success' | 'warning' | 'error';
+        title: string;
+        content: string;
+    }>({ open: false, type: 'success', title: '', content: '' });
+
+    // ── Loading overlay for submit ──
+    const [submittingPivot, setSubmittingPivot] = useState(false);
 
     const hasData = poInfo && poInfo.recNo && poInfo.recNo !== '';
 
@@ -82,9 +97,10 @@ export const PageInspection: React.FC = () => {
 
     const SPEED_DIAL_ACTIONS = [
         // If hasData is true, color is Red to mimic legacy app behavior
-        { id: 'SAVE', icon: <SaveIcon />, name: hasData ? 'Save (Update)' : 'Save', color: hasData ? '#f44336' : '#4CAF50' },
-        { id: 'CLEAR_IMAGE', icon: <ClearAllIcon />, name: 'Clear Images', color: '#FF9800' },
-        { id: 'SUBMIT', icon: <UploadIcon />, name: 'Submit TRANS4M', color: '#E91E63' },
+        { id: 'SAVE', icon: <SaveIcon />, name: hasData ? 'Update' : 'Save', color: hasData ? '#f44336' : '#4CAF50' },
+        { id: 'CLEAR_IMAGE', icon: <ClearAllIcon />, name: 'Clear Img', color: '#FF9800' },
+        { id: 'CLEAR_PO', icon: <DeleteForeverIcon />, name: 'Clear PO', color: '#9C27B0' },
+        { id: 'SUBMIT', icon: <UploadIcon />, name: 'Submit', color: '#E91E63' },
     ];
 
     // ── Build checklist lists from store ──
@@ -134,6 +150,17 @@ export const PageInspection: React.FC = () => {
                 content: 'Bạn có chắc chắn muốn xóa toàn bộ ảnh của mã PO này không?',
                 actionId
             });
+        } else if (actionId === 'CLEAR_PO') {
+            if (!poInfo?.poNumber || !poInfo?.planId || !poInfo?.planRefNo) {
+                toast.value = { ...toast.value, message: 'Thiếu thông tin PO/PlanID/PlanRef để clear!', type: 'warning' };
+                return;
+            }
+            setConfirmAction({
+                open: true,
+                title: '⚠️ Xác nhận Clear PO',
+                content: `DELETE POs: ${poInfo.poNumber}\nPlanRef: ${poInfo.planRefNo}\nUser: ${poInfo.inspectorId || ''}\n\nHệ thống sẽ đánh dấu PO này là "(Fail)".\nHành động này KHÔNG THỂ hoàn tác!\n\nBạn có chắc chắn?`,
+                actionId
+            });
         } else if (actionId === 'SUBMIT') {
             if (!poInfo?.poNumber || !poInfo?.planRefNo || !poInfo?.recNo) {
                 toast.value = { ...toast.value, message: 'PO chưa được tải hoặc thiếu dữ liệu!', type: 'warning' };
@@ -141,13 +168,12 @@ export const PageInspection: React.FC = () => {
             }
             setConfirmAction({
                 open: true,
-                title: 'Xác nhận Submit',
-                content: 'Hệ thống sẽ tạo file JSON và tải về máy. Tiếp tục?',
+                title: 'Xác nhận Submit SFTP',
+                content: `Hệ thống sẽ upload toàn bộ ảnh và file JSON lên server Pivot88/TRANS4M cho PO: ${poInfo.poNumber}.\n\nQuá trình này có thể mất vài phút. Tiếp tục?`,
                 actionId
             });
         } else {
             console.log(`Action clicked: ${actionId}`);
-            // TODO: implement other actions
         }
     };
 
@@ -211,26 +237,98 @@ export const PageInspection: React.FC = () => {
             } catch (e: any) {
                 toast.value = { ...toast.value, message: String(e), type: 'error' };
             }
-        } else if (actionId === 'SUBMIT') {
-            toast.value = { ...toast.value, message: 'Đang tạo file JSON...', type: 'info' };
+        } else if (actionId === 'CLEAR_PO') {
+            toast.value = { ...toast.value, message: 'Đang clear PO...', type: 'info' };
             try {
-                const blob: any = await exportTrans4mJson_api(poInfo?.poNumber || '', poInfo?.planRefNo || '', poInfo?.recNo || '');
-                
-                const url = window.URL.createObjectURL(new Blob([blob]));
-                const link = document.createElement('a');
-                link.href = url;
-                
-                const dateStr = new Date().toISOString().replace(/[-:T]/g, '').substring(0, 14);
-                link.setAttribute('download', `JsonTest_AQLOutbound_${poInfo?.poNumber}_${dateStr}.json`);
-                
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode?.removeChild(link);
-                window.URL.revokeObjectURL(url);
-                
-                toast.value = { ...toast.value, message: 'Đã tải file JSON thành công!', type: 'success' };
+                const result: any = await clearPo_api({
+                    poNumber: poInfo?.poNumber || '',
+                    planId: poInfo?.planId || '',
+                    planRef: poInfo?.planRefNo || '',
+                });
+                if (result?.success) {
+                    // Reset ALL app state — like fresh app load
+                    clearAllData();
+                    setAqlLevel(null);
+                    setActiveTab(0);
+
+                    setResultDialog({
+                        open: true,
+                        type: 'success',
+                        title: '✅ Clear PO thành công',
+                        content: `${result.message}\n\nTất cả dữ liệu đã được reset.`,
+                    });
+                } else {
+                    setResultDialog({
+                        open: true,
+                        type: 'error',
+                        title: '❌ Clear PO thất bại',
+                        content: result?.message || 'Lỗi không xác định',
+                    });
+                }
             } catch (e: any) {
-                toast.value = { ...toast.value, message: 'Lỗi: ' + String(e), type: 'error' };
+                setResultDialog({
+                    open: true,
+                    type: 'error',
+                    title: '❌ Lỗi',
+                    content: `Lỗi kết nối: ${String(e)}`,
+                });
+            }
+        } else if (actionId === 'SUBMIT') {
+            setSubmittingPivot(true);
+            toast.value = { ...toast.value, message: 'Đang upload lên Pivot88... Vui lòng chờ!', type: 'info' };
+            try {
+                const response: any = await submitToPivot_api({
+                    poNumber: poInfo?.poNumber || '',
+                    planRef: poInfo?.planRefNo || '',
+                    recNo: poInfo?.recNo || '',
+                    inspectorId: poInfo?.inspectorId || '',
+                });
+
+                // response = { success, message, fileName, imagesUploaded, imagesFailed, totalImages }
+                const data: SubmitToPivotResponse = response;
+
+                if (data.success) {
+                    if (data.imagesFailed && data.imagesFailed > 0) {
+                        // ── Partial success: some images failed ──
+                        setResultDialog({
+                            open: true,
+                            type: 'warning',
+                            title: '⚠️ Submit hoàn tất (có lỗi ảnh)',
+                            content: `JSON đã upload thành công!\n\n` +
+                                `📄 File: ${data.fileName}\n` +
+                                `✅ Ảnh thành công: ${data.imagesUploaded}/${data.totalImages}\n` +
+                                `❌ Ảnh thất bại: ${data.imagesFailed}/${data.totalImages}\n\n` +
+                                `Lưu ý: Một số ảnh không upload được. Vui lòng kiểm tra lại trên Pivot88.`,
+                        });
+                    } else {
+                        // ── Full success ──
+                        setResultDialog({
+                            open: true,
+                            type: 'success',
+                            title: '✅ Submitted COMPLETE',
+                            content: `Toàn bộ dữ liệu đã upload lên Pivot88 thành công!\n\n` +
+                                `📄 File: ${data.fileName}\n` +
+                                `🖼️ Ảnh: ${data.imagesUploaded}/${data.totalImages} thành công`,
+                        });
+                    }
+                } else {
+                    // ── Failed ──
+                    setResultDialog({
+                        open: true,
+                        type: 'error',
+                        title: '❌ Submit THẤT BẠI',
+                        content: `Lỗi: ${data.message}\n\nVui lòng kiểm tra kết nối mạng và thử lại.`,
+                    });
+                }
+            } catch (e: any) {
+                setResultDialog({
+                    open: true,
+                    type: 'error',
+                    title: '❌ Submit THẤT BẠI',
+                    content: `Lỗi kết nối: ${String(e)}\n\nVui lòng kiểm tra kết nối mạng và thử lại.`,
+                });
+            } finally {
+                setSubmittingPivot(false);
             }
         }
     };
@@ -366,7 +464,7 @@ export const PageInspection: React.FC = () => {
             >
                 {SPEED_DIAL_ACTIONS.map((action) => (
                     <SpeedDialAction
-                        key={action.name}
+                        key={action.id}
                         icon={action.icon}
                         tooltipTitle={action.name}
                         tooltipOpen
@@ -376,6 +474,17 @@ export const PageInspection: React.FC = () => {
                                 backgroundColor: action.color,
                                 color: '#fff',
                                 '&:hover': { backgroundColor: action.color, filter: 'brightness(0.9)' },
+                            },
+                        }}
+                        componentsProps={{
+                            tooltip: {
+                                sx: {
+                                    whiteSpace: 'nowrap',
+                                    fontSize: '13px',
+                                    fontWeight: 600,
+                                    py: 0.5,
+                                    px: 1.5,
+                                },
                             },
                         }}
                     />
@@ -391,6 +500,36 @@ export const PageInspection: React.FC = () => {
                 onPositive={handleConfirmAction}
                 onNegative={() => setConfirmAction({ ...confirmAction, open: false })}
             />
+
+            {/* ─── RESULT DIALOG (after SFTP submit) ─── */}
+            <ConfirmDialog
+                open={resultDialog.open}
+                title={resultDialog.title}
+                content={resultDialog.content}
+                positiveText="OK"
+                negativeText="Đóng"
+                onPositive={() => setResultDialog({ ...resultDialog, open: false })}
+                onNegative={() => setResultDialog({ ...resultDialog, open: false })}
+            />
+
+            {/* ─── LOADING OVERLAY (during SFTP submit) ─── */}
+            <Backdrop
+                open={submittingPivot}
+                sx={{
+                    color: '#fff',
+                    zIndex: (theme) => theme.zIndex.drawer + 1,
+                    flexDirection: 'column',
+                    gap: 2,
+                }}
+            >
+                <CircularProgress color="inherit" size={56} />
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    Đang upload lên Pivot88...
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                    Vui lòng không đóng trang này
+                </Typography>
+            </Backdrop>
         </Box>
     );
 };

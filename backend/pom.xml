@@ -74,6 +74,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- SFTP Client (JSch) for Pivot88/TRANS4M upload -->
+        <dependency>
+            <groupId>com.github.mwiede</groupId>
+            <artifactId>jsch</artifactId>
+            <version>0.2.18</version>
+        </dependency>
+
         <!-- SpringDoc OpenAPI (Swagger UI) -->
         <dependency>
             <groupId>org.springdoc</groupId>
