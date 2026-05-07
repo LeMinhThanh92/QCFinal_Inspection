@@ -21,6 +21,7 @@ export interface RecordedDefect {
 }
 
 interface AppState {
+    isDrawerOpen: boolean;
     poInfo: PoInfo | null;
     factory: string;
     aqlLevel: string | null;
@@ -30,6 +31,7 @@ interface AppState {
     images: Record<string, string[]>;
     recordedDefects: RecordedDefect[];
     
+    toggleDrawer: () => void;
     setPoInfo: (info: PoInfo | null) => void;
     setFactory: (factory: string) => void;
     setAqlLevel: (level: string | null) => void;
@@ -48,6 +50,8 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
+    isDrawerOpen: false,
+    toggleDrawer: () => set((state) => ({ isDrawerOpen: !state.isDrawerOpen })),
     poInfo: null,
     factory: 'F1', // Default or fetch from auth
     aqlLevel: null,

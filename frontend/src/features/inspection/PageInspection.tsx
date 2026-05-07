@@ -20,7 +20,6 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 // ── Components ───────────────────────────────────────
-import { AppbarInspection } from './components/AppbarInspection';
 import { PoDetailAccordion } from './components/PoDetailAccordion';
 import { ChecklistSection } from './components/ChecklistSection';
 import { InspectionQuantities, PhotoSection, ResultSection } from './components/InspectionSections';
@@ -151,7 +150,7 @@ export const PageInspection: React.FC = () => {
                 actionId
             });
         } else if (actionId === 'CLEAR_PO') {
-            if (!poInfo?.poNumber || !poInfo?.planId || !poInfo?.planRefNo) {
+            if (!poInfo?.poNumber || poInfo?.planId == null || poInfo?.planRefNo == null) {
                 toast.value = { ...toast.value, message: 'Thiếu thông tin PO/PlanID/PlanRef để clear!', type: 'warning' };
                 return;
             }
@@ -162,7 +161,7 @@ export const PageInspection: React.FC = () => {
                 actionId
             });
         } else if (actionId === 'SUBMIT') {
-            if (!poInfo?.poNumber || !poInfo?.planRefNo || !poInfo?.recNo) {
+            if (!poInfo?.poNumber || poInfo?.planRefNo == null || !poInfo?.recNo) {
                 toast.value = { ...toast.value, message: 'PO chưa được tải hoặc thiếu dữ liệu!', type: 'warning' };
                 return;
             }
@@ -341,14 +340,11 @@ export const PageInspection: React.FC = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100vh',
-                width: '100vw',
+                width: '100%',
                 overflow: 'hidden',
                 backgroundColor: (t) => t.color?.background?.o1 || '#F5F5F9',
             }}
         >
-            {/* ─── TOP: AppBar with PO Search ─── */}
-            <AppbarInspection />
-
             {/* ─── PO Summary Strip (only visible when PO is loaded) ─── */}
             {poInfo && (
                 <Box

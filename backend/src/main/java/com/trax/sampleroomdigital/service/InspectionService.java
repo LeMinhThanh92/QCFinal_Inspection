@@ -140,7 +140,7 @@ public class InspectionService {
      */
     public String getPlanId(String poNumber, String factory, String inspectorId, String planRef) {
         try {
-            String sql = "exec DtradeProduction.dbo.QCFinal 'checkpobook', ?, ?, ?, ?, '', ''";
+            String sql = "SET NOCOUNT ON; exec DtradeProduction.dbo.QCFinal 'checkpobook', ?, ?, ?, ?, '', ''";
             List<Map<String, Object>> result = jdbcTemplate.queryForList(
                 sql, 
                 poNumber, 
@@ -222,7 +222,7 @@ public class InspectionService {
             });
 
             // Try to find PlanID using checkpobook
-            String planIdSql = "exec DtradeProduction.dbo.QCFinal 'checkpobook', ?, ?, ?, ?, '', ''";
+            String planIdSql = "SET NOCOUNT ON; exec DtradeProduction.dbo.QCFinal 'checkpobook', ?, ?, ?, ?, '', ''";
             List<Map<String, Object>> planIdResult = jdbcTemplate.queryForList(
                 planIdSql, 
                 poNumber, 
@@ -1150,19 +1150,26 @@ public class InspectionService {
     public Map<String, Object> clearPo(String poNumber, String planId, String planRef) {
         Map<String, Object> result = new HashMap<>();
         try {
+            if (planId == null || planId.trim().isEmpty()) {
+                result.put("success", true);
+                result.put("message", "PO chưa có dữ liệu trên hệ thống, đã xóa bộ đệm cục bộ.");
+                result.put("rowsAffected", 0);
+                return result;
+            }
+
             String sql = "UPDATE DtradeProduction.dbo.InlineFGsWHPlanBook " +
                          "SET PONo = ? " +
                          "WHERE PlanID = ? AND JobNo = ? AND PONo = ?";
             String failPo = poNumber + "(Fail)";
-            int rows = jdbcTemplate.update(sql, failPo, Integer.parseInt(planId), planRef, poNumber);
+            int rows = jdbcTemplate.update(sql, failPo, Integer.parseInt(planId), planRef != null ? planRef : "", poNumber);
 
             if (rows > 0) {
                 result.put("success", true);
                 result.put("message", "Đã clear PO: " + poNumber + " → " + failPo);
                 result.put("rowsAffected", rows);
             } else {
-                result.put("success", false);
-                result.put("message", "Không tìm thấy record với PlanID=" + planId + ", JobNo=" + planRef + ", PONo=" + poNumber);
+                result.put("success", true);
+                result.put("message", "Không tìm thấy record trên hệ thống, đã xóa bộ đệm cục bộ.");
             }
         } catch (Exception e) {
             result.put("success", false);
