@@ -2,7 +2,7 @@ import { TranslationKeys } from './vi';
 
 export const th: TranslationKeys = {
   app: {
-    title: 'SAMPLE ROOM DIGITAL',
+    title: 'QC Final Inspection',
     copyright: 'Copyright © Trax Group. All rights reserved',
   },
   auth: {

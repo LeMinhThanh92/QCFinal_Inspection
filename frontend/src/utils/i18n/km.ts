@@ -1,7 +1,7 @@
 import { TranslationKeys } from './vi';
 
 export const km: TranslationKeys = {
-  app: { title: 'SAMPLE ROOM DIGITAL', copyright: 'Copyright © Trax Group. All rights reserved' },
+  app: { title: 'QC Final Inspection', copyright: 'Copyright © Trax Group. All rights reserved' },
   auth: {
     login: 'ចូលប្រើ', username: 'ឈ្មោះអ្នកប្រើ', password: 'ពាក្យសម្ងាត់',
     requireUser: 'សូមបញ្ចូលឈ្មោះអ្នកប្រើ', requirePass: 'សូមបញ្ចូលពាក្យសម្ងាត់', logout: 'ចាកចេញ',

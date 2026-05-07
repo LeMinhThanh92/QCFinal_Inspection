@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    Box, Button, TextField, Typography, useTheme,
+    Box, Button, TextField, Typography, useTheme, IconButton,
     CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    ToggleButton, ToggleButtonGroup, Tooltip
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import LogoutIcon from '@mui/icons-material/Logout';
 import DialogFullScreen from '@/components/Dialog/Dialog';
 import { getSearchPo_api, getLoadImages_api, getRecordedDefects_api, getPlanId_api, getInspectorId_api, getRecNo_api } from '@/network/urls/inspection_api';
 import { useAppStore } from '@/utils/states/useAppStore';
 import { useAuth } from '@/utils/context/AuthProvider';
 import { toast } from '@/utils/states/state';
+import ConfirmDialog from '@/components/Dialog/ConfirmDialog';
 
 export const AppbarInspection: React.FC = () => {
     const theme = useTheme();
@@ -17,14 +20,72 @@ export const AppbarInspection: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [poResults, setPoResults] = useState<any[]>([]);
 
+    // State for AQL Confirm Dialog
+    const [confirmAqlOpen, setConfirmAqlOpen] = useState(false);
+    const [pendingAql, setPendingAql] = useState<string | null>(null);
+
     const factory = useAppStore(state => state.factory);
+    const aqlLevel = useAppStore(state => state.aqlLevel);
+    const setAqlLevel = useAppStore(state => state.setAqlLevel);
+    const poInfo = useAppStore(state => state.poInfo);
     const setPoInfo = useAppStore(state => state.setPoInfo);
-    const { user } = useAuth();
+    const clearAllData = useAppStore(state => state.clearAllData);
+    const isPoLoaded = !!(poInfo && poInfo.poNumber);
+    const { user, logout } = useAuth();
     const initChecklistStatuses = useAppStore(state => state.initChecklistStatuses);
     const initImages = useAppStore(state => state.initImages);
     const initRecordedDefects = useAppStore(state => state.initRecordedDefects);
 
+    useEffect(() => {
+        const verifyInspector = async () => {
+            const userId = user?.account?.username || '';
+            if (userId) {
+                try {
+                    const fetchedInspectorId = await getInspectorId_api(userId);
+                    if (!fetchedInspectorId || fetchedInspectorId.trim() === '') {
+                        toast.value = {
+                            ...toast.value,
+                            message: 'User này chưa được cập nhật User Pivot. Vui lòng liên hệ quản trị viên.',
+                            type: 'error',
+                        };
+                        setTimeout(() => {
+                            logout();
+                        }, 2500);
+                    }
+                } catch (e) {
+                    console.error('Failed to verify inspector ID on load', e);
+                }
+            }
+        };
+        verifyInspector();
+    }, [user, logout]);
+
+    const handleAqlChange = (event: React.MouseEvent<HTMLElement>, newAql: string | null) => {
+        if (isPoLoaded) {
+            setPendingAql(newAql);
+            setConfirmAqlOpen(true);
+            return;
+        }
+        setAqlLevel(newAql);
+    };
+
+    const handleConfirmAqlChange = () => {
+        clearAllData();
+        setAqlLevel(pendingAql);
+        setConfirmAqlOpen(false);
+        setPendingAql(null);
+    };
+
+    const handleCancelAqlChange = () => {
+        setConfirmAqlOpen(false);
+        setPendingAql(null);
+    };
+
     const handleSearchPO = async () => {
+        if (!aqlLevel) {
+            toast.value = { ...toast.value, message: 'Please select an AQL Level first!', type: 'warning' };
+            return;
+        }
         if (!poInput.trim()) {
             toast.value = { ...toast.value, message: 'Please enter a PO Number', type: 'warning' };
             return;
@@ -58,9 +119,20 @@ export const AppbarInspection: React.FC = () => {
             const userId = user?.account?.username || '';
             if (userId) {
                 const fetchedInspectorId = await getInspectorId_api(userId);
-                if (fetchedInspectorId) {
-                    inspectorId = fetchedInspectorId;
+                if (!fetchedInspectorId || fetchedInspectorId.trim() === '') {
+                    // User Pivot not configured — notify and force logout
+                    toast.value = {
+                        ...toast.value,
+                        message: 'User này chưa được cập nhật User Pivot. Vui lòng liên hệ quản trị viên.',
+                        type: 'error',
+                    };
+                    // Auto logout after a short delay so the user can read the message
+                    setTimeout(() => {
+                        logout();
+                    }, 2500);
+                    return;
                 }
+                inspectorId = fetchedInspectorId;
             }
         } catch (e) {
             console.error('Failed to get inspector ID', e);
@@ -92,7 +164,7 @@ export const AppbarInspection: React.FC = () => {
             poNumber: poNo,
             sku: poItem.SKU || poItem.sku,
             supplier: poItem.CompanyName || poItem.supplier,
-            totalQty: poItem.TotalQty || poItem.totalQty || poItem.QtyTotal || poItem.POQty || 0,
+            totalQty: poItem.TotalQty || poItem.totalQty || poItem.POQty || 0,
             sampleSize: poItem.SampleSize || poItem.sampleSize || poItem.Sample_Size || poItem.PlanQty || 0,
             planRefNo: planRef,
             recNo: recNo,
@@ -125,6 +197,9 @@ export const AppbarInspection: React.FC = () => {
         } catch (error) {
             console.error('Failed to load PO details (images/defects):', error);
         }
+
+        // Set the search text field to the full selected PO
+        setPoInput(poNo);
     };
 
     return (
@@ -152,6 +227,44 @@ export const AppbarInspection: React.FC = () => {
                 >
                     QC Final Inspection
                 </Typography>
+
+                <Tooltip title={isPoLoaded ? 'Đổi AQL sẽ reset PO hiện tại' : 'Chọn AQL Level trước khi Load PO'} arrow>
+                    <ToggleButtonGroup
+                        value={aqlLevel}
+                        exclusive
+                        onChange={handleAqlChange}
+                        size="small"
+                        sx={{
+                            backgroundColor: '#fff',
+                            height: '40px',
+                            '& .MuiToggleButton-root': {
+                                fontWeight: 600,
+                                px: 2,
+                                color: '#333',
+                                border: '1px solid #ccc',
+                                '&.Mui-selected': {
+                                    color: '#d32f2f',
+                                    backgroundColor: 'rgba(211, 47, 47, 0.1)',
+                                    borderColor: '#d32f2f',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(211, 47, 47, 0.2)',
+                                    }
+                                },
+                                '&.Mui-disabled': {
+                                    opacity: 0.6,
+                                },
+                                '&.Mui-selected.Mui-disabled': {
+                                    color: '#d32f2f',
+                                    backgroundColor: 'rgba(211, 47, 47, 0.08)',
+                                }
+                            }
+                        }}
+                    >
+                        <ToggleButton value="Regular orders (AQL 1.0, Level I)">REGULAR</ToggleButton>
+                        <ToggleButton value="Japan orders (AQL 1.0, Level II)">JAPAN</ToggleButton>
+                        <ToggleButton value="100%inspection">100%</ToggleButton>
+                    </ToggleButtonGroup>
+                </Tooltip>
 
                 <TextField
                     size="small"
@@ -191,6 +304,20 @@ export const AppbarInspection: React.FC = () => {
                 >
                     {loading ? <CircularProgress size={22} color="inherit" /> : 'Load PO'}
                 </Button>
+            </Box>
+
+            {/* Right: User Info + Logout */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography sx={{ fontWeight: 600, color: (t: any) => t.color?.text?.o1 || '#1B2722' }}>
+                    {user?.account?.fullname || user?.account?.username}
+                </Typography>
+                <IconButton 
+                    onClick={() => logout()}
+                    sx={{ color: (t: any) => t.color?.error?.main || '#d32f2f' }}
+                    title="Logout"
+                >
+                    <LogoutIcon />
+                </IconButton>
             </Box>
 
             {/* PO Selection Dialog */}
@@ -245,6 +372,15 @@ export const AppbarInspection: React.FC = () => {
                     </Table>
                 </TableContainer>
             </DialogFullScreen>
+            <ConfirmDialog
+                open={confirmAqlOpen}
+                title="Xác nhận thay đổi AQL"
+                content="Đổi AQL Level sẽ xóa dữ liệu PO hiện tại. Bạn có chắc không?"
+                positiveText="Đồng ý"
+                negativeText="Hủy"
+                onPositive={handleConfirmAqlChange}
+                onNegative={handleCancelAqlChange}
+            />
         </Box>
     );
 };

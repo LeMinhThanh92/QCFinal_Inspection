@@ -6,7 +6,7 @@ export function LeftLogin() {
     const COPYRIGHT_TEXT = 'Copyright © Trax Group. All rights reserved';
     const SLOGAN = 'Leading\nGARMENT TECHNOLOGIST\nin SPORTSWEAR';
     const LOGO_LINK_IMG = '/static/images/avatars/logo.png';
-    const APP = 'SAMPLE ROOM DIGITAL';
+    const APP = 'QC Final Inspection';
     return (
         <Box
             sx={{

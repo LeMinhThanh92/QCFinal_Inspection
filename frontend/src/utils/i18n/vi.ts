@@ -1,6 +1,6 @@
 export const vi = {
   app: {
-    title: 'SAMPLE ROOM DIGITAL',
+    title: 'QC Final Inspection',
     copyright: 'Copyright © Trax Group. All rights reserved',
   },
   auth: {

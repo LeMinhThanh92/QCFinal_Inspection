@@ -1,8 +1,9 @@
-import React, { useRef } from 'react';
-import { Box, Typography, Button, useTheme, CircularProgress } from '@mui/material';
+import React, { useRef, useState } from 'react';
+import { Box, Typography, Button, useTheme, CircularProgress, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { useAppStore } from '@/utils/states/useAppStore';
-import { getCheckPassFail_api } from '@/network/urls/inspection_api';
+import { getCheckPassFail_api, updateCartonNum_api, loadCtn_api, getImageServerUrl_api, uploadFileToPHP, saveImageRecord_api, deleteImage_api } from '@/network/urls/inspection_api';
+import { toast } from '@/utils/states/state';
 
 // ══════════════════════════════════════════════════════
 // ── Section 9: Inspection Quantities ─────────────────
@@ -11,7 +12,54 @@ export const InspectionQuantities: React.FC = () => {
     const theme = useTheme();
     const poInfo = useAppStore(state => state.poInfo);
 
-    const RowItem = ({ label, value }: { label: string; value: string | number }) => (
+    const setPoInfo = useAppStore(state => state.setPoInfo);
+    const [cartonDialogOpen, setCartonDialogOpen] = useState(false);
+    const [cartonInputValue, setCartonInputValue] = useState('');
+    const [isUpdating, setIsUpdating] = useState(false);
+
+    const handleCartonClick = async () => {
+        if (!poInfo?.recNo) {
+            toast.value = { ...toast.value, message: 'Vui lòng Save report cơ bản trước khi sửa Carton!', type: 'warning' };
+            return;
+        }
+        
+        let currentValue = poInfo?.CartonNum || poInfo?.CTNNo || '';
+        setCartonInputValue(currentValue);
+        setCartonDialogOpen(true);
+        setIsUpdating(true);
+        
+        try {
+            const poNo = poInfo?.poNumber || '';
+            const planRef = poInfo?.planRefNo || '';
+            if (poNo && planRef) {
+                const fetchedCtn = await loadCtn_api(poNo, planRef);
+                if (fetchedCtn) {
+                    setCartonInputValue(fetchedCtn);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load ctn from API', e);
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleSaveCarton = async () => {
+        if (!poInfo?.recNo) return;
+        setIsUpdating(true);
+        try {
+            await updateCartonNum_api(poInfo.recNo, cartonInputValue);
+            setPoInfo({ ...poInfo, CartonNum: cartonInputValue, CTNNo: cartonInputValue });
+            toast.value = { ...toast.value, message: 'Đã cập nhật Carton Number thành công', type: 'success' };
+            setCartonDialogOpen(false);
+        } catch (e: any) {
+            toast.value = { ...toast.value, message: String(e), type: 'error' };
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const RowItem = ({ label, value, onClickValue }: { label: string; value: string | number; onClickValue?: () => void }) => (
         <Box
             sx={{
                 display: 'flex',
@@ -26,8 +74,18 @@ export const InspectionQuantities: React.FC = () => {
             <Typography sx={{ flex: 3, fontWeight: 700, fontSize: '14px', color: (t) => t.color?.text?.o1 || '#1B2722' }}>
                 {label}
             </Typography>
-            <Typography sx={{ flex: 7, fontSize: '14px', color: (t) => t.color?.text?.o1 || '#1B2722' }}>
-                {value || 'N/A'}
+            <Typography 
+                sx={{ 
+                    flex: 7, 
+                    fontSize: '14px', 
+                    color: onClickValue ? (t: any) => t.color?.primary?.main || '#1976d2' : (t: any) => t.color?.text?.o1 || '#1B2722',
+                    cursor: onClickValue ? 'pointer' : 'inherit',
+                    textDecoration: onClickValue ? 'underline' : 'none',
+                    '&:hover': onClickValue ? { color: (t: any) => t.color?.primary?.dark || '#115293' } : {}
+                }}
+                onClick={onClickValue}
+            >
+                {value || (onClickValue ? 'Add Carton Number' : 'N/A')}
             </Typography>
         </Box>
     );
@@ -57,8 +115,47 @@ export const InspectionQuantities: React.FC = () => {
                 <RowItem label="Booked Qty (Pcs)" value={poInfo?.totalQty || poInfo?.QtyTotal || poInfo?.TotalQty || poInfo?.POQty || ''} />
                 <RowItem label="Inspected Qty (Pcs)" value={poInfo?.totalQty || poInfo?.QtyTotal || poInfo?.TotalQty || poInfo?.InspectedQty || ''} />
                 <RowItem label="Sample Size" value={poInfo?.InsQTY || poInfo?.sampleSize || poInfo?.SampleSize || poInfo?.Sample_Size || poInfo?.PlanQty || ''} />
-                <RowItem label="Inspected Carton Numbers" value={poInfo?.CartonNum || poInfo?.CTNNo || ''} />
+                <RowItem label="Inspected Carton Numbers" value={poInfo?.CartonNum || poInfo?.CTNNo || ''} onClickValue={handleCartonClick} />
             </Box>
+
+            {/* Dialog Edit Carton */}
+            <Dialog open={cartonDialogOpen} onClose={() => setCartonDialogOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle sx={{ fontWeight: 700, color: (t) => t.color?.text?.o1 || '#1B2722' }}>Edit Carton Numbers</DialogTitle>
+                <DialogContent dividers>
+                    <Typography variant="body2" sx={{ mb: 2, color: (t) => t.color?.neutral?.o6 || '#6B7280' }}>
+                        Nhập các số carton cách nhau bởi dấu <strong>|</strong> (Ví dụ: 1|6|12|18|25|28)
+                    </Typography>
+                    <TextField
+                        fullWidth
+                        multiline
+                        minRows={3}
+                        maxRows={6}
+                        variant="outlined"
+                        value={cartonInputValue}
+                        onChange={(e) => setCartonInputValue(e.target.value)}
+                        placeholder="1|6|12|18|25|28|35|42|45|51|55|59|66"
+                    />
+                </DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button onClick={() => setCartonDialogOpen(false)} sx={{ color: (t) => t.color?.text?.o6 || '#6B7280' }}>
+                        Cancel
+                    </Button>
+                    <Button 
+                        onClick={handleSaveCarton} 
+                        variant="contained" 
+                        disabled={isUpdating}
+                        sx={{ 
+                            backgroundColor: (t) => t.color?.primary?.o5 || '#39B54A', 
+                            color: '#fff',
+                            '&:hover': {
+                                backgroundColor: (t) => t.color?.primary?.o6 || '#27A338',
+                            }
+                        }}
+                    >
+                        {isUpdating ? <CircularProgress size={24} color="inherit" /> : 'Save'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };
@@ -67,39 +164,143 @@ export const InspectionQuantities: React.FC = () => {
 // ── Section 10: Photos ───────────────────────────────
 // ══════════════════════════════════════════════════════
 const PHOTO_CATEGORIES = [
-    { label: 'China Hangtab', id: 'HANGTAB' },
-    { label: 'Picture for special packaging (optional)', id: 'PACKAGING' },
-    { label: 'Compare Sample vs. Actual', id: 'COMPARE' },
-    { label: 'Exceptional development approval vs. Actual', id: 'EXCEPTIONAL' },
-    { label: 'Defect photo (optional)', id: 'DEFECT' },
-    { label: 'Measurements', id: 'MEASUREMENTS' },
+    { label: 'China Hangtab', id: 'HANGTAB', types: 'Product' },
+    { label: 'Picture for special packaging (optional)', id: 'PACKAGING', types: 'Product' },
+    { label: 'Compare Sample vs. Actual', id: 'COMPARE', types: 'Product' },
+    { label: 'Exceptional development approval vs. Actual', id: 'EXCEPTIONAL', types: 'Product' },
+    { label: 'Defect photo (optional)', id: 'DEFECT', types: 'Product' },
+    { label: 'Measurements', id: 'MEASUREMENTS', types: 'Measurements' },
 ];
 
 export const PhotoSection: React.FC = () => {
     const theme = useTheme();
-    const { images, addImage, removeImage } = useAppStore();
+    const { images, addImage, removeImage, poInfo } = useAppStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [currentPhotoCategoryId, setCurrentPhotoCategoryId] = React.useState<string>('');
+    const [uploadingCategory, setUploadingCategory] = React.useState<string | null>(null);
     const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
+    const [imageToDelete, setImageToDelete] = React.useState<{ categoryId: string, imgSrc: string } | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
 
     const handlePhotoClick = (id: string) => {
+        if (!poInfo?.recNo) {
+            toast.value = { ...toast.value, message: 'Vui lòng Save Report trước khi upload ảnh!', type: 'warning' };
+            return;
+        }
         setCurrentPhotoCategoryId(id);
         if (fileInputRef.current) {
             fileInputRef.current.click();
         }
     };
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
-        if (files && files.length > 0 && currentPhotoCategoryId) {
-            // For demo purposes, we create local object URLs. In production, this would upload to server.
-            Array.from(files).forEach((file) => {
-                const objectUrl = URL.createObjectURL(file);
-                addImage(currentPhotoCategoryId, objectUrl);
-            });
+        if (files && files.length > 0 && currentPhotoCategoryId && poInfo?.recNo) {
+            const category = PHOTO_CATEGORIES.find(c => c.id === currentPhotoCategoryId);
+            if (!category) return;
+
+            setUploadingCategory(currentPhotoCategoryId);
+            try {
+                // Step 1: Get the PHP upload URL from backend (GetLoadData 651)
+                const serverInfo: any = await getImageServerUrl_api();
+                if (!serverInfo?.success || !serverInfo?.uploadUrl) {
+                    toast.value = { ...toast.value, message: serverInfo?.error || 'Cannot get image server URL', type: 'error' };
+                    return;
+                }
+                const uploadUrl = serverInfo.uploadUrl;
+                const imageServerUrl = serverInfo.imageServerUrl;
+
+                // Step 2: Upload each file DIRECTLY to PHP server (like EditPDFAndroid)
+                const uploadedFileNames: string[] = [];
+                for (const file of Array.from(files)) {
+                    const safeFileName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9.\-]/g, '_');
+                    try {
+                        const phpResult = await uploadFileToPHP(uploadUrl, file, safeFileName);
+                        if (phpResult.success) {
+                            uploadedFileNames.push(safeFileName);
+                        } else {
+                            console.warn('PHP upload failed:', phpResult.message);
+                        }
+                    } catch (err: any) {
+                        console.error('PHP upload error:', err);
+                        toast.value = { ...toast.value, message: 'Upload lỗi: ' + err.message, type: 'error' };
+                    }
+                }
+
+                if (uploadedFileNames.length === 0) {
+                    toast.value = { ...toast.value, message: 'Không upload được ảnh nào lên server', type: 'error' };
+                    return;
+                }
+
+                // Step 3: Save file names to QCFinalImage DB via Java backend
+                const dbResult: any = await saveImageRecord_api(
+                    poInfo.recNo,
+                    category.label,
+                    category.types,
+                    uploadedFileNames
+                );
+
+                if (dbResult?.success) {
+                    toast.value = { ...toast.value, message: 'Upload ảnh thành công!', type: 'success' };
+                    // Build full URLs for UI display
+                    uploadedFileNames.forEach((fileName: string) => {
+                        const fullUrl = `${imageServerUrl}ImageQCFINAL/${fileName}`;
+                        addImage(currentPhotoCategoryId, fullUrl);
+                    });
+                } else {
+                    toast.value = { ...toast.value, message: dbResult?.error || 'Lưu DB thất bại', type: 'error' };
+                }
+            } catch (e: any) {
+                toast.value = { ...toast.value, message: String(e), type: 'error' };
+            } finally {
+                setUploadingCategory(null);
+            }
         }
         if (event.target) {
             event.target.value = '';
+        }
+    };
+
+    const handleDeleteImage = (categoryId: string, imgSrc: string) => {
+        setImageToDelete({ categoryId, imgSrc });
+    };
+
+    const confirmDeleteImage = async () => {
+        if (!imageToDelete || !poInfo?.recNo) return;
+        setIsDeleting(true);
+        const { categoryId, imgSrc } = imageToDelete;
+        const category = PHOTO_CATEGORIES.find(c => c.id === categoryId);
+        if (!category) {
+            setImageToDelete(null);
+            setIsDeleting(false);
+            return;
+        }
+
+        // Extract filename from the imgSrc
+        const lastSlash = imgSrc.lastIndexOf('/');
+        const fileName = lastSlash >= 0 ? imgSrc.substring(lastSlash + 1) : imgSrc;
+        
+        // Ensure we don't try to delete local blob URLs from backend
+        if (imgSrc.startsWith('blob:')) {
+            removeImage(categoryId, imgSrc);
+            setImageToDelete(null);
+            setIsDeleting(false);
+            return;
+        }
+
+        try {
+            const result: any = await deleteImage_api(poInfo.recNo, category.label, fileName);
+            if (result?.success) {
+                removeImage(categoryId, imgSrc);
+                toast.value = { ...toast.value, message: 'Đã xóa ảnh thành công!', type: 'success' };
+            } else {
+                toast.value = { ...toast.value, message: result?.error || 'Lỗi khi xóa ảnh trên server', type: 'error' };
+            }
+        } catch (e: any) {
+            toast.value = { ...toast.value, message: String(e), type: 'error' };
+        } finally {
+            setImageToDelete(null);
+            setIsDeleting(false);
         }
     };
 
@@ -138,12 +339,14 @@ export const PhotoSection: React.FC = () => {
 
                 {PHOTO_CATEGORIES.map((category) => {
                     const categoryImages = images[category.id] || [];
+                    const isUploading = uploadingCategory === category.id;
                     return (
                         <Box key={category.id} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                             <Button
                                 variant="contained"
                                 fullWidth
-                                startIcon={<CameraAltIcon />}
+                                disabled={isUploading}
+                                startIcon={isUploading ? <CircularProgress size={20} color="inherit" /> : <CameraAltIcon />}
                                 onClick={() => handlePhotoClick(category.id)}
                                 sx={{
                                     backgroundColor: (t) => t.color?.primary?.o5 || '#39B54A',
@@ -151,6 +354,7 @@ export const PhotoSection: React.FC = () => {
                                     fontWeight: 700,
                                     fontSize: '14px',
                                     textTransform: 'none',
+
                                     borderRadius: '4px',
                                     py: 1.5,
                                     boxShadow: '0px 1px 3px rgba(0,0,0,0.08)',
@@ -188,7 +392,7 @@ export const PhotoSection: React.FC = () => {
                                             <Box
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    removeImage(category.id, imgSrc);
+                                                    handleDeleteImage(category.id, imgSrc);
                                                 }}
                                                 sx={{
                                                     position: 'absolute',
@@ -272,6 +476,53 @@ export const PhotoSection: React.FC = () => {
                     </Box>
                 </Box>
             )}
+
+            {/* Confirm Delete Dialog */}
+            <Dialog 
+                open={!!imageToDelete} 
+                onClose={() => !isDeleting && setImageToDelete(null)}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle sx={{ fontWeight: 700, color: (t) => t.color?.text?.o1 || '#1B2722' }}>
+                    Xác nhận xóa ảnh
+                </DialogTitle>
+                <DialogContent dividers>
+                    <Typography variant="body1" sx={{ color: (t) => t.color?.text?.o1 || '#1B2722' }}>
+                        Bạn có chắc chắn muốn xóa ảnh này không?
+                    </Typography>
+                    {imageToDelete?.imgSrc && (
+                        <Box 
+                            component="img" 
+                            src={imageToDelete.imgSrc} 
+                            sx={{ mt: 2, width: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 1 }} 
+                        />
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button 
+                        onClick={() => setImageToDelete(null)} 
+                        disabled={isDeleting}
+                        sx={{ color: (t) => t.color?.text?.o6 || '#6B7280' }}
+                    >
+                        Hủy
+                    </Button>
+                    <Button 
+                        onClick={confirmDeleteImage} 
+                        variant="contained"
+                        disabled={isDeleting}
+                        sx={{ 
+                            backgroundColor: (t) => t.color?.error?.main || '#d32f2f', 
+                            color: '#fff',
+                            '&:hover': {
+                                backgroundColor: (t) => t.color?.error?.dark || '#c62828',
+                            }
+                        }}
+                    >
+                        {isDeleting ? <CircularProgress size={24} color="inherit" /> : 'Xóa'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

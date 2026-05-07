@@ -7,16 +7,10 @@ import {
 
 // ── Icons ────────────────────────────────────────────
 import SaveIcon from '@mui/icons-material/Save';
-import SendIcon from '@mui/icons-material/Send';
 import ImageIcon from '@mui/icons-material/Image';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
-import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import LanguageIcon from '@mui/icons-material/Language';
-import BuildIcon from '@mui/icons-material/Build';
 import UploadIcon from '@mui/icons-material/Upload';
 import DescriptionIcon from '@mui/icons-material/Description';
-import AssignmentIcon from '@mui/icons-material/Assignment';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import BugReportIcon from '@mui/icons-material/BugReport';
@@ -35,6 +29,9 @@ import {
     MEASUREMENTS_ITEMS,
 } from './components/ChecklistConstants';
 import { useAppStore } from '@/utils/states/useAppStore';
+import { clearImages_api, exportTrans4mJson_api, saveAll_api } from '@/network/urls/inspection_api';
+import { toast } from '@/utils/states/state';
+import ConfirmDialog from '@/components/Dialog/ConfirmDialog';
 
 // ── Tab Panel Helper ─────────────────────────────────
 interface TabPanelProps {
@@ -69,7 +66,13 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
 export const PageInspection: React.FC = () => {
     const theme = useTheme();
     const [activeTab, setActiveTab] = useState(0);
-    const poInfo = useAppStore(state => state.poInfo);
+    const { poInfo, images, removeImage, checklistStatuses, setPoInfo } = useAppStore();
+    const factory = useAppStore(state => state.factory);
+    const aqlLevel = useAppStore(state => state.aqlLevel);
+
+    const [confirmAction, setConfirmAction] = useState<{open: boolean, title: string, content: string, actionId: string | null}>({
+        open: false, title: '', content: '', actionId: null
+    });
 
     const hasData = poInfo && poInfo.recNo && poInfo.recNo !== '';
 
@@ -79,15 +82,158 @@ export const PageInspection: React.FC = () => {
 
     const SPEED_DIAL_ACTIONS = [
         // If hasData is true, color is Red to mimic legacy app behavior
-        { icon: <SaveIcon />, name: hasData ? 'Save (Update)' : 'Save', color: hasData ? '#f44336' : '#4CAF50' },
-        { icon: <ImageIcon />, name: 'Save Images', color: '#2196F3' },
-        { icon: <BarChartIcon />, name: 'Lines Chart', color: '#9C27B0' },
-        { icon: <ClearAllIcon />, name: 'Clear Images', color: '#FF9800' },
-        { icon: <DeleteSweepIcon />, name: 'Clear PO', color: '#f44336' },
-        { icon: <LanguageIcon />, name: 'View Web', color: '#00BCD4' },
-        { icon: <BuildIcon />, name: 'Rework Tracking', color: '#795548' },
-        { icon: <UploadIcon />, name: 'Submit TRANS4M', color: '#E91E63' },
+        { id: 'SAVE', icon: <SaveIcon />, name: hasData ? 'Save (Update)' : 'Save', color: hasData ? '#f44336' : '#4CAF50' },
+        { id: 'CLEAR_IMAGE', icon: <ClearAllIcon />, name: 'Clear Images', color: '#FF9800' },
+        { id: 'SUBMIT', icon: <UploadIcon />, name: 'Submit TRANS4M', color: '#E91E63' },
     ];
+
+    // ── Build checklist lists from store ──
+    const buildChecklistLists = () => {
+        const conformIndexes: number[] = [];
+        const nonConformIndexes: number[] = [];
+        const naIndexes: number[] = [];
+
+        for (let i = 0; i <= 26; i++) {
+            const status = checklistStatuses[i] || 'conform';
+            if (status === 'conform') conformIndexes.push(i);
+            else if (status === 'non-conform') nonConformIndexes.push(i);
+            else if (status === 'na') naIndexes.push(i);
+        }
+
+        return {
+            conform: conformIndexes.join('|'),
+            nonConform: nonConformIndexes.join('|'),
+            na: naIndexes.join('|'),
+        };
+    };
+
+    const handleSpeedDialAction = (actionId: string) => {
+        if (actionId === 'SAVE') {
+            if (!aqlLevel) {
+                toast.value = { ...toast.value, message: 'Vui lòng chọn AQL Level trước!', type: 'warning' };
+                return;
+            }
+            if (!poInfo?.poNumber) {
+                toast.value = { ...toast.value, message: 'Vui lòng load PO trước!', type: 'warning' };
+                return;
+            }
+            setConfirmAction({
+                open: true,
+                title: 'Xác nhận Lưu',
+                content: `Bạn có chắc chắn muốn SAVE dữ liệu cho PO: ${poInfo.poNumber}?`,
+                actionId
+            });
+        } else if (actionId === 'CLEAR_IMAGE') {
+            if (!poInfo?.recNo) {
+                toast.value = { ...toast.value, message: 'Chưa có dữ liệu để xóa ảnh!', type: 'warning' };
+                return;
+            }
+            setConfirmAction({
+                open: true,
+                title: 'Xác nhận Xóa Ảnh',
+                content: 'Bạn có chắc chắn muốn xóa toàn bộ ảnh của mã PO này không?',
+                actionId
+            });
+        } else if (actionId === 'SUBMIT') {
+            if (!poInfo?.poNumber || !poInfo?.planRefNo || !poInfo?.recNo) {
+                toast.value = { ...toast.value, message: 'PO chưa được tải hoặc thiếu dữ liệu!', type: 'warning' };
+                return;
+            }
+            setConfirmAction({
+                open: true,
+                title: 'Xác nhận Submit',
+                content: 'Hệ thống sẽ tạo file JSON và tải về máy. Tiếp tục?',
+                actionId
+            });
+        } else {
+            console.log(`Action clicked: ${actionId}`);
+            // TODO: implement other actions
+        }
+    };
+
+    const handleConfirmAction = async () => {
+        const { actionId } = confirmAction;
+        setConfirmAction({ ...confirmAction, open: false }); // close dialog immediately
+
+        if (actionId === 'SAVE') {
+            toast.value = { ...toast.value, message: 'Đang lưu dữ liệu...', type: 'info' };
+            try {
+                const lists = buildChecklistLists();
+                const payload = {
+                    poNumber: poInfo?.poNumber || '',
+                    factory: factory,
+                    inspectorId: poInfo?.inspectorId || '',
+                    planRef: poInfo?.planRefNo || '',
+                    aqlLevel: aqlLevel || '',
+                    sampleSize: String(poInfo?.sampleSize || poInfo?.SampleSize || poInfo?.Sample_Size || ''),
+                    totalQty: String(poInfo?.totalQty || poInfo?.TotalQty || poInfo?.QtyTotal || ''),
+                    insQty: String(poInfo?.sampleSize || poInfo?.SampleSize || poInfo?.Sample_Size || poInfo?.totalQty || poInfo?.TotalQty || ''),
+                    cartonNum: poInfo?.CartonNum || poInfo?.cartonNum || poInfo?.CTNNo || '',
+                    checklistConform: lists.conform,
+                    checklistNonConform: lists.nonConform,
+                    checklistNA: lists.na,
+                };
+
+                const result: any = await saveAll_api(payload);
+
+                if (result?.success) {
+                    setPoInfo({
+                        ...poInfo,
+                        planId: result.planId || poInfo?.planId,
+                        recNo: result.recNo || poInfo?.recNo,
+                    });
+
+                    const status = result.status || 'UNKNOWN';
+                    if (status === 'fail') {
+                        toast.value = { ...toast.value, message: '❌ FAIL — Saved but result is FAIL!', type: 'error' };
+                    } else if (status === 'pass') {
+                        toast.value = { ...toast.value, message: '✅ PASS — Saved successfully!', type: 'success' };
+                    } else {
+                        toast.value = { ...toast.value, message: `Saved! (${result.isNew ? 'Created New' : 'Updated'})`, type: 'success' };
+                    }
+                } else {
+                    toast.value = { ...toast.value, message: result?.message || 'Lỗi khi lưu!', type: 'error' };
+                }
+            } catch (e: any) {
+                toast.value = { ...toast.value, message: 'Lỗi: ' + String(e), type: 'error' };
+            }
+        } else if (actionId === 'CLEAR_IMAGE') {
+            try {
+                const result: any = await clearImages_api(poInfo?.recNo || '');
+                if (result?.success) {
+                    toast.value = { ...toast.value, message: 'Đã xóa toàn bộ ảnh thành công!', type: 'success' };
+                    Object.keys(images).forEach(category => {
+                        images[category].forEach(img => removeImage(category, img));
+                    });
+                } else {
+                    toast.value = { ...toast.value, message: result?.error || 'Lỗi khi xóa ảnh', type: 'error' };
+                }
+            } catch (e: any) {
+                toast.value = { ...toast.value, message: String(e), type: 'error' };
+            }
+        } else if (actionId === 'SUBMIT') {
+            toast.value = { ...toast.value, message: 'Đang tạo file JSON...', type: 'info' };
+            try {
+                const blob: any = await exportTrans4mJson_api(poInfo?.poNumber || '', poInfo?.planRefNo || '', poInfo?.recNo || '');
+                
+                const url = window.URL.createObjectURL(new Blob([blob]));
+                const link = document.createElement('a');
+                link.href = url;
+                
+                const dateStr = new Date().toISOString().replace(/[-:T]/g, '').substring(0, 14);
+                link.setAttribute('download', `JsonTest_AQLOutbound_${poInfo?.poNumber}_${dateStr}.json`);
+                
+                document.body.appendChild(link);
+                link.click();
+                link.parentNode?.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                
+                toast.value = { ...toast.value, message: 'Đã tải file JSON thành công!', type: 'success' };
+            } catch (e: any) {
+                toast.value = { ...toast.value, message: 'Lỗi: ' + String(e), type: 'error' };
+            }
+        }
+    };
 
     return (
         <Box
@@ -135,9 +281,6 @@ export const PageInspection: React.FC = () => {
                             }} 
                         />
                     )}
-                    {poInfo.sku && <Chip label={`SKU: ${poInfo.sku}`} variant="outlined" size="small" />}
-                    {poInfo.supplier && <Chip label={`Supplier: ${poInfo.supplier}`} variant="outlined" size="small" />}
-                    {poInfo.totalQty && <Chip label={`Qty: ${poInfo.totalQty}`} variant="outlined" size="small" />}
                 </Box>
             )}
 
@@ -227,7 +370,7 @@ export const PageInspection: React.FC = () => {
                         icon={action.icon}
                         tooltipTitle={action.name}
                         tooltipOpen
-                        onClick={() => console.log(`Action: ${action.name}`)}
+                        onClick={() => handleSpeedDialAction(action.id)}
                         FabProps={{
                             sx: {
                                 backgroundColor: action.color,
@@ -238,6 +381,16 @@ export const PageInspection: React.FC = () => {
                     />
                 ))}
             </SpeedDial>
+
+            <ConfirmDialog
+                open={confirmAction.open}
+                title={confirmAction.title}
+                content={confirmAction.content}
+                positiveText="Xác nhận"
+                negativeText="Hủy"
+                onPositive={handleConfirmAction}
+                onNegative={() => setConfirmAction({ ...confirmAction, open: false })}
+            />
         </Box>
     );
 };

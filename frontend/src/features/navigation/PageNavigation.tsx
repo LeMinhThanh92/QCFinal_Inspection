@@ -49,7 +49,6 @@ export const PageNavigation = () => {
     const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'));
 
     const menuItems = [
-        { path: "/sample-room", dept: "SAMPLE ROOM", icon: <SvgSampleRoom /> },
         { path: "/inspection", dept: "INSPECTION", icon: <SvgInspection /> },
     ];
 

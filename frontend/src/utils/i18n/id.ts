@@ -1,7 +1,7 @@
 import { TranslationKeys } from './vi';
 
 export const id: TranslationKeys = {
-  app: { title: 'SAMPLE ROOM DIGITAL', copyright: 'Copyright © Trax Group. All rights reserved' },
+  app: { title: 'QC Final Inspection', copyright: 'Copyright © Trax Group. All rights reserved' },
   auth: {
     login: 'Masuk', username: 'Nama pengguna', password: 'Kata sandi',
     requireUser: 'Silakan masukkan nama pengguna', requirePass: 'Silakan masukkan kata sandi',
