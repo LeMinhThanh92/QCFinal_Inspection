@@ -1,9 +1,10 @@
 # ─── Start Backend ─────────────────────────────────────────────────
-# Sample Room Digital API — Port 6663
+# QCFinal Backend — Port 6664
 # Usage: .\start-backend.ps1
 # ───────────────────────────────────────────────────────────────────
 
-Write-Host "Starting Sample Room Digital Backend on port 6663..." -ForegroundColor Cyan
+$Host.UI.RawUI.WindowTitle = "QCFinal Backend"
+Write-Host "Starting QCFinal Backend on port 6664..." -ForegroundColor Cyan
 
 Set-Location "$PSScriptRoot\backend"
 

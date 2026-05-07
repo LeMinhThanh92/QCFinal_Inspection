@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { createTheme, ThemeProvider, Theme, alpha } from '@mui/material/styles';
 import { } from '@mui/x-data-grid/themeAugmentation';
+import type {} from '@mui/x-date-pickers/themeAugmentation';
 
 declare module '@mui/material/styles' {
     interface Theme {

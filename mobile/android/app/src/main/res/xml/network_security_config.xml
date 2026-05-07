@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <!-- Allow cleartext and trust all certs for internal network -->
     <base-config cleartextTrafficPermitted="true">
@@ -8,8 +8,6 @@
         </trust-anchors>
     </base-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">172.17.100.105</domain>
-        <domain includeSubdomains="true">172.17.186.16</domain>
         <domain includeSubdomains="true">172.17.100.199</domain>
         <trust-anchors>
             <certificates src="system" />

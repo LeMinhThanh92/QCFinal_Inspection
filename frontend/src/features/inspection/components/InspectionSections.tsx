@@ -512,10 +512,10 @@ export const PhotoSection: React.FC = () => {
                         variant="contained"
                         disabled={isDeleting}
                         sx={{ 
-                            backgroundColor: (t) => t.color?.error?.main || '#d32f2f', 
+                            backgroundColor: (t) => t.color?.text?.o4 || '#d32f2f', 
                             color: '#fff',
                             '&:hover': {
-                                backgroundColor: (t) => t.color?.error?.dark || '#c62828',
+                                backgroundColor: (t) => t.color?.text?.o4 || '#c62828',
                             }
                         }}
                     >

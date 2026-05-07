@@ -4,6 +4,7 @@ import storage from '@/utils/storage.ts';
 import {useApiSend} from "@/hooks/app/useApiSend.ts";
 import {loginRequest, LoginRequest, logoutRequest, validateSession} from "@/network/urls/auth.ts";
 import {toast} from "@/utils/states/state.ts";
+import {useAppStore} from "@/utils/states/useAppStore.ts";
 
 type AuthAccount = {
     account: {
@@ -87,6 +88,12 @@ const AuthProvider = ({children}: { children: ReactNode }) => {
         const account = _mapAccountFromToken();
         setUser(account);
         localStorage.setItem('machines', JSON.stringify(data.machines));
+        
+        if (account?.account?.department) {
+            const dept = account.account.department;
+            useAppStore.getState().setFactory(dept.substring(0, 2));
+        }
+        
         return account;
     };
 
@@ -95,6 +102,12 @@ const AuthProvider = ({children}: { children: ReactNode }) => {
         if (storage.getToken()) {
             const account = _mapAccountFromToken();
             setUser(account);
+            
+            if (account?.account?.department) {
+                const dept = account.account.department;
+                useAppStore.getState().setFactory(dept.substring(0, 2));
+            }
+            
             return account;
         }
         setUser(null);

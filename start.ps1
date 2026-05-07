@@ -87,7 +87,7 @@ if (-not (Test-Path (Join-Path $frontendDir "index.html"))) {
 # -- Build backend startup script ------------------------
 # Backend always HTTP (mobile APK needs HTTP)
 $beCmdFile = Join-Path $RootDir "_start_backend.cmd"
-$beCmdLines = @("@echo off", "title DecorationScanOutput Backend")
+$beCmdLines = @("@echo off", "title QCFinal Backend")
 
 $securityFile = Join-Path $backendDir "custom-java.security"
 $securityArg = ""
@@ -109,7 +109,7 @@ $beCmdLines += "pause"
 $feCmdFile = Join-Path $RootDir "_start_frontend.cmd"
 $feCmdLines = @(
     "@echo off",
-    "title DecorationScanOutput Frontend",
+    "title QCFinal Frontend",
     "cd /d ""$frontendDir""",
     "",
     "REM -- Ensure serve is installed globally (not npx temp) --",
@@ -127,18 +127,18 @@ $feCmdLines = @(
     "REM -- Auto-restart loop - if serve crashes, wait 5s and restart --",
     ":restart",
     "echo.",
-    "echo [%date% %time%] Starting serve on port 7779...",
-    "start /b serve -l 7779 -s --no-clipboard",
+    "echo [%date% %time%] Starting serve on port 7780...",
+    "start /b serve -l 7780 -s --no-clipboard",
     "",
     "REM Wait for serve to start, then reclaim window title",
     "timeout /t 2 /nobreak >nul",
-    "title DecorationScanOutput Frontend",
+    "title QCFinal Frontend",
     "",
     "REM Monitor: refresh title + check if serve is still running",
     ":check",
     "timeout /t 10 /nobreak >nul",
-    "title DecorationScanOutput Frontend",
-    "netstat -an | findstr "":7779.*LISTENING"" >nul 2>&1",
+    "title QCFinal Frontend",
+    "netstat -an | findstr "":7780.*LISTENING"" >nul 2>&1",
     "if %errorlevel% equ 0 goto check",
     "",
     "echo.",
@@ -151,27 +151,27 @@ $feCmdLines = @(
 
 # -- Open Firewall Ports ----------------------------------
 Write-Host ""
-Write-Host "[Firewall] Opening ports 6662 (BE) and 7779 (FE)..." -ForegroundColor Yellow
+Write-Host "[Firewall] Opening ports 6664 (BE) and 7780 (FE)..." -ForegroundColor Yellow
 try {
-    & netsh advfirewall firewall delete rule name="DecorationScan-Backend-6662"  2>$null | Out-Null
-    & netsh advfirewall firewall delete rule name="DecorationScan-Frontend-7779" 2>$null | Out-Null
+    & netsh advfirewall firewall delete rule name="DecorationScan-Backend-6664"  2>$null | Out-Null
+    & netsh advfirewall firewall delete rule name="DecorationScan-Frontend-7780" 2>$null | Out-Null
 
-    & netsh advfirewall firewall add rule name="DecorationScan-Backend-6662"  dir=in action=allow protocol=tcp localport=6662 | Out-Null
-    & netsh advfirewall firewall add rule name="DecorationScan-Frontend-7779" dir=in action=allow protocol=tcp localport=7779 | Out-Null
+    & netsh advfirewall firewall add rule name="DecorationScan-Backend-6664"  dir=in action=allow protocol=tcp localport=6664 | Out-Null
+    & netsh advfirewall firewall add rule name="DecorationScan-Frontend-7780" dir=in action=allow protocol=tcp localport=7780 | Out-Null
 
-    Write-Host "  -> Port 6662 (Backend) opened" -ForegroundColor Green
-    Write-Host "  -> Port 7779 (Frontend) opened" -ForegroundColor Green
+    Write-Host "  -> Port 6664 (Backend) opened" -ForegroundColor Green
+    Write-Host "  -> Port 7780 (Frontend) opened" -ForegroundColor Green
 } catch {
     Write-Host "  -> Could not open firewall ports (run as Administrator)" -ForegroundColor Yellow
 }
 
 # -- Start Backend ----------------------------------------
 Write-Host ""
-Write-Host "[Backend] Starting Spring Boot on port 6662 (HTTP)..." -ForegroundColor Yellow
+Write-Host "[Backend] Starting Spring Boot on port 6664 (HTTP)..." -ForegroundColor Yellow
 Start-Process cmd -ArgumentList "/c", """$beCmdFile"""
 
 # -- Start Frontend ---------------------------------------
-Write-Host "[Frontend] Starting on port 7779 (http)..." -ForegroundColor Yellow
+Write-Host "[Frontend] Starting on port 7780 (http)..." -ForegroundColor Yellow
 Start-Process cmd -ArgumentList "/c", """$feCmdFile"""
 
 # -- Summary ----------------------------------------------
@@ -180,8 +180,8 @@ Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "  Services Starting..." -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  Backend API  : http://localhost:6662/api/v2" -ForegroundColor White
-Write-Host "  Frontend Web : http://localhost:7779/" -ForegroundColor White
+Write-Host "  Backend API  : http://localhost:6664/api/v2" -ForegroundColor White
+Write-Host "  Frontend Web : http://localhost:7780/" -ForegroundColor White
 Write-Host ""
 Write-Host "  Two CMD windows opened. Close them to stop the services." -ForegroundColor Gray
 Write-Host ""

@@ -21,7 +21,7 @@ param(
     [int]$FrontendPort = 7780,
 
     [string]$BackendIP = "",
-    [int]$BackendPort = 6663,
+    [int]$BackendPort = 6664,
 
     [string]$Label = "",
 
@@ -58,15 +58,14 @@ $BackendUrl  = "http://${BackendIP}:${BackendPort}/api/v2"
 
 # ── Resolve output APK name ────────────────────────────────
 if ($Label) {
-    $ApkName = "SampleRoomDigital-${Label}.apk"
+    $ApkName = "QCFinal-${Label}.apk"
 } else {
-    $safe = $FrontendIP -replace '\.', '_'
-    $ApkName = "SampleRoomDigital-${safe}.apk"
+    $ApkName = "app-debug.apk"
 }
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "  SampleRoomDigital — APK Build"          -ForegroundColor Cyan
+Write-Host "  QCFinal — APK Build"          -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 if ($FrontendIP -eq $BackendIP) {
@@ -110,7 +109,7 @@ $capContent = @"
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.trax.sampleroomdigital',
+  appId: 'com.trax.QCFinal',
   appName: 'Sample Room Digital',
   webDir: '../frontend/dist',
   server: {
@@ -171,7 +170,11 @@ if ($BackendIP -ne $FrontendIP) {
 Write-Host "[4/5] Running Capacitor sync..." -ForegroundColor Yellow
 Push-Location $MobileDir
 try {
-    & npx cap sync android 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
+    Write-Host "  -> Installing dependencies..." -ForegroundColor Gray
+    & npm install --legacy-peer-deps
+    if ($LASTEXITCODE -ne 0) { throw "npm install failed in mobile" }
+
+    cmd.exe /c "npx cap sync android"
     if ($LASTEXITCODE -ne 0) { throw "Capacitor sync failed" }
     Write-Host "  -> Capacitor sync OK" -ForegroundColor Green
 } finally {
@@ -191,7 +194,7 @@ if (Test-Path $capJsonPath) {
 Write-Host "[5/5] Building APK (Gradle assembleDebug)..." -ForegroundColor Yellow
 Push-Location $AndroidDir
 try {
-    & .\gradlew.bat assembleDebug 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
+    cmd.exe /c ".\gradlew.bat assembleDebug"
     if ($LASTEXITCODE -ne 0) { throw "Gradle build failed" }
     Write-Host "  -> Gradle build OK" -ForegroundColor Green
 } finally {

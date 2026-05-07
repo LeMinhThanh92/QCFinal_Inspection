@@ -30,8 +30,7 @@ export const useExportExcel = () => {
             XLSX.utils.book_append_sheet(workbook, worksheet, "Export");
 
             // Generate a timestamped filename using server-adjusted time (NEVER rely on device clock)
-            const { serverTimeOffset } = await import('@/utils/states/useAppStore').then(m => ({ serverTimeOffset: m.useAppStore.getState().serverTimeOffset }));
-            const now = new Date(Date.now() + serverTimeOffset);
+            const now = new Date();
             const timestamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
             const fileName = `${fileNamePrefix}_${timestamp}.xlsx`;
 

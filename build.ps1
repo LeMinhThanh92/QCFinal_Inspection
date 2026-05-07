@@ -4,11 +4,11 @@
 #
 # Examples:
 #   .\build.ps1
-#   .\build.ps1 -BackendUrl "http://192.168.1.100:6663/api/v2"
-#   .\build.ps1 -BackendUrl "http://myserver:6663/api/v2"
+#   .\build.ps1 -BackendUrl "http://192.168.1.100:6664/api/v2"
+#   .\build.ps1 -BackendUrl "http://myserver:6664/api/v2"
 # ─────────────────────────────────────────────────────────────
 param(
-    [string]$OutputZip   = "SampleRoomDigital-release.zip",
+    [string]$OutputZip   = "QCFinal-release.zip",
     [string]$BackendUrl  = "",
     [string]$JavaHome    = "C:\Program Files\Java\jdk-17"
 )
@@ -30,7 +30,7 @@ $env:JAVA_HOME = $JavaHome
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "  SampleRoomDigital — Production Build"   -ForegroundColor Cyan
+Write-Host "  QCFinal — Production Build"   -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Java:       $JavaHome" -ForegroundColor Gray
@@ -63,7 +63,7 @@ if (Test-Path $versionFile) {
 
 # ── 0.6 Resolve Backend URL ──────────────────────────────
 if (-not $BackendUrl) {
-    $BackendUrl = "http://172.17.100.199:6663/api/v2"
+    $BackendUrl = "http://172.17.100.199:6664/api/v2"
 }
 Write-Host "[0/5] Backend URL: $BackendUrl" -ForegroundColor Yellow
 $envProd = Join-Path $ProjectRoot "frontend\.env.production"

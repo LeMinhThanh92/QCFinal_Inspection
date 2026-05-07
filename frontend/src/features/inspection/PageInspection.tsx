@@ -203,11 +203,13 @@ export const PageInspection: React.FC = () => {
                 const result: any = await saveAll_api(payload);
 
                 if (result?.success) {
-                    setPoInfo({
-                        ...poInfo,
-                        planId: result.planId || poInfo?.planId,
-                        recNo: result.recNo || poInfo?.recNo,
-                    });
+                    if (poInfo) {
+                        setPoInfo({
+                            ...poInfo,
+                            planId: result.planId || poInfo.planId,
+                            recNo: result.recNo || poInfo.recNo,
+                        });
+                    }
 
                     const status = result.status || 'UNKNOWN';
                     if (status === 'fail') {
