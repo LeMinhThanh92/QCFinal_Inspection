@@ -199,7 +199,7 @@ public class SubmitService {
             if (!labResult.isEmpty()) {
                 Object resultObj = labResult.get(0).get("result");
                 if (resultObj != null && "Failed".equalsIgnoreCase(resultObj.toString().trim())) {
-                    throw new RuntimeException("PO FAILED...");
+                    throw new RuntimeException("CheckLabtest fail");
                 }
             }
         } catch (RuntimeException e) {

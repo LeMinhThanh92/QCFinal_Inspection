@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { Box, Typography, Button, useTheme, CircularProgress, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Typography, Button, Chip, IconButton, useTheme, CircularProgress, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import AddAPhotoIcon from '@mui/icons-material/AddAPhoto';
 import { useAppStore } from '@/utils/states/useAppStore';
 import { getCheckPassFail_api, updateCartonNum_api, loadCtn_api, getImageServerUrl_api, uploadFileToPHP, saveImageRecord_api, deleteImage_api } from '@/network/urls/inspection_api';
 import { toast } from '@/utils/states/state';
@@ -308,111 +309,216 @@ export const PhotoSection: React.FC = () => {
         <Box
             sx={{
                 mb: 2,
-                borderRadius: '8px',
+                borderRadius: '12px',
                 overflow: 'hidden',
-                border: (t) => `1px solid ${t.color?.neutral?.o3 || '#D2D6DE'}`,
+                border: (t) => `1px solid ${t.color?.neutral?.o3 || '#e0e0e0'}`,
+                backgroundColor: (t) => t.color?.background?.o1 || '#fff',
             }}
         >
+            {/* Header */}
             <Box
                 sx={{
-                    backgroundColor: (t) => t.color?.background?.o2 || '#F5F5F9',
-                    borderBottom: (t) => `1px solid ${t.color?.neutral?.o3 || '#D2D6DE'}`,
-                    px: 2,
+                    background: 'linear-gradient(135deg, #1B2722 0%, #2d3e36 100%)',
+                    px: 2.5,
                     py: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
                 }}
             >
-                <Typography sx={{ fontWeight: 700, fontSize: '15px', color: (t) => t.color?.text?.o1 || '#1B2722' }}>
+                <CameraAltIcon sx={{ color: '#fff', fontSize: 20 }} />
+                <Typography sx={{ fontWeight: 700, fontSize: '15px', color: '#fff', letterSpacing: '0.3px' }}>
                     Photos
+                </Typography>
+                <Typography sx={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', ml: 'auto' }}>
+                    {Object.values(images).reduce((sum, arr) => sum + arr.length, 0)} ảnh
                 </Typography>
             </Box>
 
-            <Box sx={{ p: 2, backgroundColor: (t) => t.color?.background?.o1 || '#fff', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {/* Hidden file input */}
-                <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    ref={fileInputRef}
-                    style={{ display: 'none' }}
-                    onChange={handleFileChange}
-                />
+            {/* Hidden file input */}
+            <input
+                type="file"
+                accept="image/*"
+                multiple
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+            />
 
-                {PHOTO_CATEGORIES.map((category) => {
+            {/* Category Accordion List */}
+            <Box sx={{ p: 0 }}>
+                {PHOTO_CATEGORIES.map((category, catIdx) => {
                     const categoryImages = images[category.id] || [];
                     const isUploading = uploadingCategory === category.id;
-                    return (
-                        <Box key={category.id} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            <Button
-                                variant="contained"
-                                fullWidth
-                                disabled={isUploading}
-                                startIcon={isUploading ? <CircularProgress size={20} color="inherit" /> : <CameraAltIcon />}
-                                onClick={() => handlePhotoClick(category.id)}
-                                sx={{
-                                    backgroundColor: (t) => t.color?.primary?.o5 || '#39B54A',
-                                    color: '#fff',
-                                    fontWeight: 700,
-                                    fontSize: '14px',
-                                    textTransform: 'none',
+                    const count = categoryImages.length;
 
-                                    borderRadius: '4px',
+                    return (
+                        <Box 
+                            key={category.id} 
+                            sx={{ 
+                                borderBottom: catIdx < PHOTO_CATEGORIES.length - 1
+                                    ? (t: any) => `1px solid ${t.color?.neutral?.o3 || '#eee'}`
+                                    : 'none',
+                            }}
+                        >
+                            {/* Category Header Row */}
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    px: 2,
                                     py: 1.5,
-                                    boxShadow: '0px 1px 3px rgba(0,0,0,0.08)',
-                                    '&:hover': {
-                                        backgroundColor: (t) => t.color?.primary?.o6 || '#27A338',
-                                        boxShadow: '0px 4px 6px rgba(0,0,0,0.1)',
-                                    },
-                                    transition: 'all 0.2s ease',
+                                    gap: 1.5,
+                                    backgroundColor: count > 0 ? 'rgba(57,181,74,0.04)' : 'transparent',
+                                    transition: 'background-color 0.2s',
                                 }}
                             >
-                                {category.label} {categoryImages.length > 0 && `(${categoryImages.length})`}
-                            </Button>
-                            
-                            {categoryImages.length > 0 && (
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
+                                {/* Category info */}
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                    <Typography sx={{
+                                        fontWeight: 600,
+                                        fontSize: '13px',
+                                        color: (t: any) => t.color?.text?.o1 || '#333',
+                                        lineHeight: 1.4,
+                                    }}>
+                                        {category.label}
+                                    </Typography>
+                                </Box>
+
+                                {/* Badge count */}
+                                {count > 0 && (
+                                    <Chip
+                                        label={count}
+                                        size="small"
+                                        sx={{
+                                            height: 22,
+                                            minWidth: 28,
+                                            fontSize: '11px',
+                                            fontWeight: 700,
+                                            backgroundColor: (t: any) => t.color?.primary?.o5 || '#39B54A',
+                                            color: '#fff',
+                                        }}
+                                    />
+                                )}
+
+                                {/* Upload button */}
+                                <IconButton
+                                    size="small"
+                                    disabled={isUploading}
+                                    onClick={() => handlePhotoClick(category.id)}
+                                    sx={{
+                                        width: 34,
+                                        height: 34,
+                                        backgroundColor: (t: any) => t.color?.primary?.o5 || '#39B54A',
+                                        color: '#fff',
+                                        '&:hover': {
+                                            backgroundColor: (t: any) => t.color?.primary?.o6 || '#27A338',
+                                            transform: 'scale(1.05)',
+                                        },
+                                        '&.Mui-disabled': {
+                                            backgroundColor: '#ccc',
+                                            color: '#fff',
+                                        },
+                                        transition: 'all 0.2s ease',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                    }}
+                                >
+                                    {isUploading 
+                                        ? <CircularProgress size={18} sx={{ color: '#fff' }} /> 
+                                        : <AddAPhotoIcon sx={{ fontSize: 18 }} />
+                                    }
+                                </IconButton>
+                            </Box>
+
+                            {/* Image Grid */}
+                            {count > 0 && (
+                                <Box sx={{
+                                    px: 2,
+                                    pb: 2,
+                                    display: 'grid',
+                                    gridTemplateColumns: {
+                                        xs: 'repeat(3, 1fr)',
+                                        sm: 'repeat(4, 1fr)',
+                                        md: 'repeat(5, 1fr)',
+                                        lg: 'repeat(6, 1fr)',
+                                    },
+                                    gap: 1,
+                                }}>
                                     {categoryImages.map((imgSrc, idx) => (
-                                        <Box 
-                                            key={idx} 
-                                            sx={{ 
-                                                position: 'relative', 
-                                                width: 80, 
-                                                height: 80, 
-                                                borderRadius: 1, 
+                                        <Box
+                                            key={idx}
+                                            sx={{
+                                                position: 'relative',
+                                                paddingTop: '100%', /* 1:1 aspect ratio */
+                                                borderRadius: '8px',
                                                 overflow: 'hidden',
-                                                border: (t) => `1px solid ${t.color?.neutral?.o3 || '#ddd'}`,
+                                                border: (t: any) => `1px solid ${t.color?.neutral?.o3 || '#e0e0e0'}`,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s ease',
+                                                '&:hover': {
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                                    transform: 'translateY(-2px)',
+                                                    '& .delete-btn': { opacity: 1 },
+                                                },
                                             }}
                                         >
                                             <Box
                                                 component="img"
                                                 src={imgSrc}
                                                 alt={`${category.label} ${idx + 1}`}
-                                                sx={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
                                                 onClick={() => setSelectedImage(imgSrc)}
+                                                sx={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover',
+                                                }}
                                             />
+                                            {/* Delete overlay */}
                                             <Box
+                                                className="delete-btn"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleDeleteImage(category.id, imgSrc);
                                                 }}
                                                 sx={{
                                                     position: 'absolute',
-                                                    top: 2,
-                                                    right: 2,
-                                                    backgroundColor: 'rgba(0,0,0,0.5)',
+                                                    top: 4,
+                                                    right: 4,
+                                                    backgroundColor: 'rgba(211,47,47,0.85)',
                                                     color: '#fff',
                                                     borderRadius: '50%',
-                                                    width: 20,
-                                                    height: 20,
+                                                    width: 24,
+                                                    height: 24,
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
                                                     cursor: 'pointer',
                                                     fontSize: '14px',
                                                     fontWeight: 'bold',
-                                                    '&:hover': { backgroundColor: 'rgba(255,0,0,0.8)' }
+                                                    opacity: { xs: 1, md: 0 },
+                                                    transition: 'opacity 0.2s, background-color 0.2s',
+                                                    '&:hover': { backgroundColor: 'rgba(211,47,47,1)' },
+                                                    boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
                                                 }}
                                             >
                                                 ✕
+                                            </Box>
+                                            {/* Index label */}
+                                            <Box sx={{
+                                                position: 'absolute',
+                                                bottom: 0,
+                                                left: 0,
+                                                right: 0,
+                                                background: 'linear-gradient(transparent, rgba(0,0,0,0.5))',
+                                                px: 0.5,
+                                                py: 0.3,
+                                            }}>
+                                                <Typography sx={{ color: '#fff', fontSize: '10px', fontWeight: 600, textAlign: 'right' }}>
+                                                    {idx + 1}
+                                                </Typography>
                                             </Box>
                                         </Box>
                                     ))}
@@ -423,7 +529,7 @@ export const PhotoSection: React.FC = () => {
                 })}
             </Box>
 
-            {/* Image Viewer Dialog */}
+            {/* Image Viewer Lightbox */}
             {selectedImage && (
                 <Box
                     sx={{
@@ -432,12 +538,13 @@ export const PhotoSection: React.FC = () => {
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        backgroundColor: 'rgba(0,0,0,0.9)',
+                        backgroundColor: 'rgba(0,0,0,0.92)',
                         zIndex: 9999,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'zoom-out',
+                        backdropFilter: 'blur(4px)',
                     }}
                     onClick={() => setSelectedImage(null)}
                 >
@@ -446,29 +553,31 @@ export const PhotoSection: React.FC = () => {
                         src={selectedImage}
                         alt="Enlarged view"
                         sx={{
-                            maxWidth: '95vw',
-                            maxHeight: '95vh',
+                            maxWidth: '92vw',
+                            maxHeight: '90vh',
                             objectFit: 'contain',
-                            borderRadius: '4px',
-                            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                            borderRadius: '8px',
+                            boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
                         }}
                     />
                     <Box
                         sx={{
                             position: 'absolute',
-                            top: 20,
-                            right: 20,
+                            top: 16,
+                            right: 16,
                             color: '#fff',
-                            backgroundColor: 'rgba(255,255,255,0.2)',
+                            backgroundColor: 'rgba(255,255,255,0.15)',
                             borderRadius: '50%',
-                            width: 40,
-                            height: 40,
+                            width: 44,
+                            height: 44,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '24px',
+                            fontSize: '22px',
                             cursor: 'pointer',
-                            '&:hover': { backgroundColor: 'rgba(255,255,255,0.4)' },
+                            transition: 'background-color 0.2s',
+                            '&:hover': { backgroundColor: 'rgba(255,255,255,0.35)' },
+                            backdropFilter: 'blur(8px)',
                         }}
                         onClick={() => setSelectedImage(null)}
                     >
@@ -483,6 +592,7 @@ export const PhotoSection: React.FC = () => {
                 onClose={() => !isDeleting && setImageToDelete(null)}
                 maxWidth="xs"
                 fullWidth
+                PaperProps={{ sx: { borderRadius: '12px' } }}
             >
                 <DialogTitle sx={{ fontWeight: 700, color: (t) => t.color?.text?.o1 || '#1B2722' }}>
                     Xác nhận xóa ảnh
@@ -495,15 +605,19 @@ export const PhotoSection: React.FC = () => {
                         <Box 
                             component="img" 
                             src={imageToDelete.imgSrc} 
-                            sx={{ mt: 2, width: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 1 }} 
+                            sx={{ mt: 2, width: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: '8px' }} 
                         />
                     )}
                 </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
+                <DialogActions sx={{ p: 2, gap: 1 }}>
                     <Button 
                         onClick={() => setImageToDelete(null)} 
                         disabled={isDeleting}
-                        sx={{ color: (t) => t.color?.text?.o6 || '#6B7280' }}
+                        sx={{ 
+                            color: (t) => t.color?.text?.o6 || '#6B7280',
+                            borderRadius: '8px',
+                            textTransform: 'none',
+                        }}
                     >
                         Hủy
                     </Button>
@@ -512,10 +626,13 @@ export const PhotoSection: React.FC = () => {
                         variant="contained"
                         disabled={isDeleting}
                         sx={{ 
-                            backgroundColor: (t) => t.color?.text?.o4 || '#d32f2f', 
+                            backgroundColor: '#d32f2f', 
                             color: '#fff',
+                            borderRadius: '8px',
+                            textTransform: 'none',
+                            fontWeight: 600,
                             '&:hover': {
-                                backgroundColor: (t) => t.color?.text?.o4 || '#c62828',
+                                backgroundColor: '#c62828',
                             }
                         }}
                     >
@@ -537,8 +654,9 @@ export const ResultSection: React.FC = () => {
     const [resultStatus, setResultStatus] = React.useState<'pass' | 'fail' | null>(null);
     const [checking, setChecking] = React.useState(false);
 
-    const rejectedQty = poInfo?.Rejected ?? poInfo?.rejected ?? 0;
-    const acceptedQty = poInfo?.Accpected ?? poInfo?.accpected ?? poInfo?.Accepted ?? poInfo?.accepted ?? 0;
+    const rejectedQty = parseInt(String(poInfo?.Rejected ?? poInfo?.rejected ?? 0), 10) || 0;
+    const sampleSize = parseInt(String(poInfo?.sampleSize || poInfo?.SampleSize || poInfo?.Sample_Size || poInfo?.PlanQty || 0), 10) || 0;
+    const acceptedQty = Math.max(0, sampleSize - rejectedQty);
 
     React.useEffect(() => {
         const poNo = poInfo?.poNumber || '';

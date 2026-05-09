@@ -161,6 +161,29 @@ public class InspectionService {
     }
 
     /**
+     * Retrieves the sample size via checksamplesize.
+     */
+    public String getSampleSize(String aqlLv, String qtyTotal) {
+        try {
+            String sql = "exec DtradeProduction.dbo.QCFinal 'checksamplesize', ?, ?, '', '', '', ''";
+            List<Map<String, Object>> result = jdbcTemplate.queryForList(
+                sql, 
+                aqlLv != null ? aqlLv : "", 
+                qtyTotal != null ? qtyTotal : ""
+            );
+            if (!result.isEmpty()) {
+                Object obj = result.get(0).values().iterator().next();
+                if (obj != null) {
+                    return obj.toString().trim();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "N/A";
+    }
+
+    /**
      * Retrieves the Inspector ID (EmployeeCode) via loadUserPV.
      */
     public String getInspectorId(String userId) {
@@ -309,30 +332,37 @@ public class InspectionService {
                                           int major, String operation) {
         Map<String, Object> result = new HashMap<>();
         try {
-            // 1. Get current Accepted/Rejected from QCFinalReport
-            String selectSql = "select Accpected, Rejected from DtradeProduction.dbo.QCFinalReport where RecNo = ?";
-            List<Map<String, Object>> current = jdbcTemplate.queryForList(selectSql, recNo);
-            int currentAccepted = 0;
-            int currentRejected = 0;
-            if (!current.isEmpty()) {
-                Object accObj = current.get(0).get("Accpected");
-                Object rejObj = current.get(0).get("Rejected");
-                currentAccepted = accObj != null ? Integer.parseInt(accObj.toString().trim()) : 0;
-                currentRejected = rejObj != null ? Integer.parseInt(rejObj.toString().trim()) : 0;
-            }
-
-            // 2. Calculate new values
-            int newAccepted = currentAccepted - major;
-            int newRejected = currentRejected + major;
-
-            // 3. UPDATE QCFinalReport
-            String updateSql = "update DtradeProduction.dbo.QCFinalReport set Accpected = ?, Rejected = ? where RecNo = ?";
-            jdbcTemplate.update(updateSql, newAccepted, newRejected, recNo);
-
-            // 4. INSERT QCFinalDefImg
+            // 1. INSERT QCFinalDefImg FIRST
             String insertSql = "insert into QCFinalDefImg (RecNo, PONO, DefCode, DefDescription, Critical, Major, Minor, DefectiveUnit, SysCreateDate, Operation) " +
                     "values (?, ?, ?, ?, 0, ?, 0, 0, getdate(), ?)";
             jdbcTemplate.update(insertSql, recNo, poNumber, defCode, defDescription, major, operation != null ? operation : "");
+
+            // 2. Sum ALL active defects for this RecNo
+            String sumSql = "select ISNULL(SUM(Critical + Major + Minor), 0) as totalDefectQty from QCFinalDefImg where RecNo = ? and Remark is null";
+            List<Map<String, Object>> sumResult = jdbcTemplate.queryForList(sumSql, recNo);
+            int totalDefectQty = 0;
+            if (!sumResult.isEmpty() && sumResult.get(0).get("totalDefectQty") != null) {
+                totalDefectQty = Integer.parseInt(sumResult.get(0).get("totalDefectQty").toString().trim());
+            }
+
+            // 3. Get InsQTY from QCFinalReport
+            String selectSql = "select InsQTY from DtradeProduction.dbo.QCFinalReport where RecNo = ?";
+            List<Map<String, Object>> current = jdbcTemplate.queryForList(selectSql, recNo);
+            int insQty = 0;
+            if (!current.isEmpty()) {
+                Object insObj = current.get(0).get("InsQTY");
+                insQty = insObj != null ? Integer.parseInt(insObj.toString().trim()) : 0;
+            }
+
+            // 4. Recalculate: Rejected = total remaining defects, Accepted = InsQTY - Rejected
+            int newRejected = totalDefectQty;
+            int newAccepted = insQty - totalDefectQty;
+
+            // 5. UPDATE QCFinalReport
+            String updateSql = "update DtradeProduction.dbo.QCFinalReport set Accpected = ?, Rejected = ? where RecNo = ?";
+            jdbcTemplate.update(updateSql, newAccepted, newRejected, recNo);
+
+
 
             // 5. Trigger updatestatus
             try {
@@ -358,39 +388,44 @@ public class InspectionService {
     }
 
     /**
-     * Soft-deletes a defect (Remark='*') and reverses the Accepted/Rejected counts.
-     * Returns a map with updated accepted and rejected values.
+     * Soft-deletes a defect (Remark='*') and recalculates Accepted/Rejected from scratch.
+     * 
+     * C# equivalent: Lvdef_ItemClick
+     *   1. Remark='*' on the defect row
+     *   2. SUM remaining defect quantities
+     *   3. Rejected = totalRemainingDefectQty, Accepted = InsQTY - Rejected
+     *   4. UPDATE QCFinalReport
+     *
+     * We recalculate from scratch instead of incremental +/- to avoid drift
+     * when saveAll resets Accepted=InsQTY without zeroing Rejected.
      */
     public Map<String, Object> deleteDefect(String recNo, String defDescription) {
         Map<String, Object> result = new HashMap<>();
         try {
-            // 1. Get the qty of the defect being deleted
-            String qtySql = "select top 1 Critical + Major + Minor as qty from QCFinalDefImg where RecNo = ? and DefDescription = ? and Remark is null";
-            List<Map<String, Object>> qtyResult = jdbcTemplate.queryForList(qtySql, recNo, defDescription);
-            int qty = 0;
-            if (!qtyResult.isEmpty() && qtyResult.get(0).get("qty") != null) {
-                qty = Integer.parseInt(qtyResult.get(0).get("qty").toString().trim());
-            }
-
-            // 2. Soft delete
+            // 1. Soft delete: mark Remark='*'
             String deleteSql = "update QCFinalDefImg set Remark = '*' where RecNo = ? and DefDescription = ? and Remark is null";
             jdbcTemplate.update(deleteSql, recNo, defDescription);
 
-            // 3. Get current Accepted/Rejected
-            String selectSql = "select Accpected, Rejected from DtradeProduction.dbo.QCFinalReport where RecNo = ?";
-            List<Map<String, Object>> current = jdbcTemplate.queryForList(selectSql, recNo);
-            int currentAccepted = 0;
-            int currentRejected = 0;
-            if (!current.isEmpty()) {
-                Object accObj = current.get(0).get("Accpected");
-                Object rejObj = current.get(0).get("Rejected");
-                currentAccepted = accObj != null ? Integer.parseInt(accObj.toString().trim()) : 0;
-                currentRejected = rejObj != null ? Integer.parseInt(rejObj.toString().trim()) : 0;
+            // 2. Sum ALL remaining active defects for this RecNo
+            String sumSql = "select ISNULL(SUM(Critical + Major + Minor), 0) as totalDefectQty from QCFinalDefImg where RecNo = ? and Remark is null";
+            List<Map<String, Object>> sumResult = jdbcTemplate.queryForList(sumSql, recNo);
+            int totalDefectQty = 0;
+            if (!sumResult.isEmpty() && sumResult.get(0).get("totalDefectQty") != null) {
+                totalDefectQty = Integer.parseInt(sumResult.get(0).get("totalDefectQty").toString().trim());
             }
 
-            // 4. Reverse the counts
-            int newAccepted = currentAccepted + qty;
-            int newRejected = currentRejected - qty;
+            // 3. Get InsQTY from QCFinalReport
+            String selectSql = "select InsQTY from DtradeProduction.dbo.QCFinalReport where RecNo = ?";
+            List<Map<String, Object>> current = jdbcTemplate.queryForList(selectSql, recNo);
+            int insQty = 0;
+            if (!current.isEmpty()) {
+                Object insObj = current.get(0).get("InsQTY");
+                insQty = insObj != null ? Integer.parseInt(insObj.toString().trim()) : 0;
+            }
+
+            // 4. Recalculate: Rejected = total remaining defects, Accepted = InsQTY - Rejected
+            int newRejected = totalDefectQty;
+            int newAccepted = insQty - totalDefectQty;
 
             // 5. UPDATE QCFinalReport
             String updateSql = "update DtradeProduction.dbo.QCFinalReport set Accpected = ?, Rejected = ? where RecNo = ?";
@@ -927,14 +962,23 @@ public class InspectionService {
                     }
                 }
                 List<Map<String, Object>> lsdefects = new ArrayList<>(defectsMap.values());
+                
+                // If there are no defects, add a default blank defect object
+                if (lsdefects.isEmpty()) {
+                    Map<String, Object> dummyDefProd = new java.util.LinkedHashMap<>();
+                    dummyDefProd.put("label", ""); dummyDefProd.put("subsection", ""); dummyDefProd.put("code", "");
+                    dummyDefProd.put("critical_level", 0); dummyDefProd.put("major_level", 0); dummyDefProd.put("minor_level", 0);
+                    dummyDefProd.put("comments", "blanks"); dummyDefProd.put("pictures", new ArrayList<>());
+                    lsdefects.add(dummyDefProd);
+                }
 
                 // Dummy empty defect for carton
                 List<Map<String, Object>> lsdefects_carton = new ArrayList<>();
-                Map<String, Object> dummyDef = new java.util.LinkedHashMap<>();
-                dummyDef.put("label", ""); dummyDef.put("subsection", ""); dummyDef.put("code", "");
-                dummyDef.put("critical_level", 0); dummyDef.put("major_level", 0); dummyDef.put("minor_level", 0);
-                dummyDef.put("comments", ""); dummyDef.put("pictures", new ArrayList<>());
-                lsdefects_carton.add(dummyDef);
+                Map<String, Object> dummyDefCarton = new java.util.LinkedHashMap<>();
+                dummyDefCarton.put("label", ""); dummyDefCarton.put("subsection", ""); dummyDefCarton.put("code", "");
+                dummyDefCarton.put("critical_level", 0); dummyDefCarton.put("major_level", 0); dummyDefCarton.put("minor_level", 0);
+                dummyDefCarton.put("comments", "blanks"); dummyDefCarton.put("pictures", new ArrayList<>());
+                lsdefects_carton.add(dummyDefCarton);
 
                 // -- CARTON BARCODES --
                 List<Map<String, Object>> lsCartonBarcode = new ArrayList<>();
@@ -1176,5 +1220,60 @@ public class InspectionService {
             result.put("message", "Lỗi: " + e.getMessage());
         }
         return result;
+    }
+
+    /**
+     * Loads Moisture data for a given RecNo.
+     */
+    public List<Map<String, Object>> loadMoisture(String recNo) {
+        if (recNo == null || recNo.trim().isEmpty()) return new ArrayList<>();
+        String sql = "SELECT CTNNo, FabricComposition, G_Top, G_Mid, G_Bot, C_In, C_Out, Mate_Standard, Carton_Standard " +
+                     "FROM DtradeProduction.dbo.QcfinalMoisture_NEW WHERE RecNo = ?";
+        return jdbcTemplate.queryForList(sql, recNo);
+    }
+
+    /**
+     * Saves Moisture data. If data exists for the RecNo, deletes and inserts to match the UI perfectly.
+     */
+    public void saveMoisture(String recNo, List<Map<String, String>> rows) {
+        if (recNo == null || recNo.trim().isEmpty() || rows == null || rows.isEmpty()) return;
+
+        // Check if any records exist for this RecNo
+        String checkSql = "SELECT COUNT(*) FROM DtradeProduction.dbo.QcfinalMoisture_NEW WHERE RecNo = ?";
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, recNo);
+
+        if (count != null && count > 0) {
+            String deleteSql = "DELETE FROM DtradeProduction.dbo.QcfinalMoisture_NEW WHERE RecNo = ?";
+            jdbcTemplate.update(deleteSql, recNo);
+        }
+
+        String insertSql = "INSERT INTO DtradeProduction.dbo.QcfinalMoisture_NEW " +
+                "(RecNo, CTNNo, FabricComposition, G_Top, G_Mid, G_Bot, C_In, C_Out, Mate_Standard, Carton_Standard, SysCreatedDate) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE())";
+
+        List<Object[]> batchArgs = new ArrayList<>();
+        for (Map<String, String> row : rows) {
+            batchArgs.add(new Object[] {
+                recNo,
+                row.getOrDefault("ctnNo", ""),
+                row.getOrDefault("fabricComposition", ""),
+                row.getOrDefault("gTop", ""),
+                row.getOrDefault("gMid", ""),
+                row.getOrDefault("gBot", ""),
+                row.getOrDefault("cIn", ""),
+                row.getOrDefault("cOut", ""),
+                row.getOrDefault("mateStandard", ""),
+                row.getOrDefault("cartonStandard", "")
+            });
+        }
+        jdbcTemplate.batchUpdate(insertSql, batchArgs);
+    }
+
+    /**
+     * Loads PO Inspection Today (checkposubmit)
+     */
+    public List<Map<String, Object>> getPoToday(String factory) {
+        String sql = "exec DtradeProduction.dbo.QCFinal 'checkposubmit', ?, '', '', '', '', ''";
+        return jdbcTemplate.queryForList(sql, factory != null ? factory : "");
     }
 }

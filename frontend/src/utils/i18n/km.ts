@@ -34,6 +34,9 @@ export const km: TranslationKeys = {
     loadFailed: 'ផ្ទុកទិន្នន័យបរាជ័យ!',
     ok: 'យល់ព្រម',
     close: 'បិទ',
+    submitFailed: 'ការបញ្ជូនបរាជ័យ',
+    unknownError: 'កំហុសមិនស្គាល់',
+    networkError: 'កំហុសបណ្តាញ:',
   },
   calendar: {
     january: 'មករា', february: 'កុម្ភៈ', march: 'មីនា', april: 'មេសា',

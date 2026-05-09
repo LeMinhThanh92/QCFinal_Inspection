@@ -33,6 +33,15 @@ public class InspectionController {
         return ApiResponse.success(result);
     }
 
+    @GetMapping("/check-sample-size")
+    public ApiResponse<String> checkSampleSize(
+            @RequestParam("aqlLv") String aqlLv,
+            @RequestParam("qtyTotal") String qtyTotal
+    ) {
+        String result = inspectionService.getSampleSize(aqlLv, qtyTotal);
+        return ApiResponse.success(result);
+    }
+
     @GetMapping("/defect-types")
     public ApiResponse<List<Map<String, Object>>> getDefectTypes() {
         List<Map<String, Object>> result = inspectionService.loadDefectTypes();
@@ -266,6 +275,28 @@ public class InspectionController {
             body.getOrDefault("planId", ""),
             body.getOrDefault("planRef", "")
         );
+        return ApiResponse.success(result);
+    }
+
+    @GetMapping("/moisture")
+    public ApiResponse<List<Map<String, Object>>> loadMoisture(@RequestParam("recNo") String recNo) {
+        List<Map<String, Object>> result = inspectionService.loadMoisture(recNo);
+        return ApiResponse.success(result);
+    }
+
+    @PostMapping("/save-moisture")
+    public ApiResponse<String> saveMoisture(
+            @org.springframework.web.bind.annotation.RequestBody Map<String, Object> body
+    ) {
+        String recNo = (String) body.getOrDefault("recNo", "");
+        List<Map<String, String>> rows = (List<Map<String, String>>) body.get("rows");
+        inspectionService.saveMoisture(recNo, rows);
+        return ApiResponse.success("Lưu dữ liệu Moisture thành công!");
+    }
+
+    @GetMapping("/po-today")
+    public ApiResponse<List<Map<String, Object>>> getPoToday(@RequestParam(value = "factory", defaultValue = "") String factory) {
+        List<Map<String, Object>> result = inspectionService.getPoToday(factory);
         return ApiResponse.success(result);
     }
 }

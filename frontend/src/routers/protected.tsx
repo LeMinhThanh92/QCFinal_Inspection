@@ -2,6 +2,8 @@ import { Navigate } from "react-router-dom";
 import { PageNavigation } from "@/features/navigation/PageNavigation.tsx";
 import { PageComingSoon } from "@/features/shared/PageComingSoon.tsx";
 import { PageInspection } from "@/features/inspection/PageInspection";
+import { PageMoisture } from "@/features/moisture/PageMoisture";
+import { PagePoToday } from "@/features/inspection/PagePoToday";
 import DrawerBar from "@/components/SideBar/DrawerBar.tsx";
 
 const Layout = ({ children }: { children: React.ReactNode }) => (
@@ -24,11 +26,15 @@ export const useProtectedRoutes = () => {
         },
         {
             path: '/moisture',
-            element: <Layout><PageComingSoon /></Layout>,
+            element: <Layout><PageMoisture /></Layout>,
         },
         {
             path: '/moisture-report',
             element: <Layout><PageComingSoon /></Layout>,
+        },
+        {
+            path: '/po-today',
+            element: <Layout><PagePoToday /></Layout>,
         },
         { path: '*', element: <Navigate to="/" replace /> }
     ];
@@ -52,11 +58,15 @@ export const useProtectedRoutes = () => {
         },
         {
             path: '/moisture',
-            element: <Layout><PageComingSoon /></Layout>,
+            element: <Layout><PageMoisture /></Layout>,
         },
         {
             path: '/moisture-report',
             element: <Layout><PageComingSoon /></Layout>,
+        },
+        {
+            path: '/po-today',
+            element: <Layout><PagePoToday /></Layout>,
         },
         { path: '*', element: <Navigate to="/" replace /> }
     ];

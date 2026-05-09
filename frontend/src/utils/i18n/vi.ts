@@ -53,6 +53,9 @@ export const vi = {
     loadFailed: 'Lỗi tải dữ liệu!',
     ok: 'Đồng ý',
     close: 'Đóng',
+    submitFailed: 'Submit THẤT BẠI',
+    unknownError: 'Lỗi không xác định',
+    networkError: 'Lỗi kết nối:',
   },
   calendar: {
     january: 'Tháng 1',

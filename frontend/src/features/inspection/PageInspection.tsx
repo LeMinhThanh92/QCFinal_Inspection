@@ -35,6 +35,7 @@ import { useAppStore } from '@/utils/states/useAppStore';
 import { clearImages_api, exportTrans4mJson_api, saveAll_api, submitToPivot_api, SubmitToPivotResponse, clearPo_api } from '@/network/urls/inspection_api';
 import { toast } from '@/utils/states/state';
 import ConfirmDialog from '@/components/Dialog/ConfirmDialog';
+import { useLocale } from '@/utils/context/LocaleProvider';
 
 // ── Tab Panel Helper ─────────────────────────────────
 interface TabPanelProps {
@@ -72,6 +73,7 @@ export const PageInspection: React.FC = () => {
     const { poInfo, images, removeImage, checklistStatuses, setPoInfo, clearAllData, setAqlLevel } = useAppStore();
     const factory = useAppStore(state => state.factory);
     const aqlLevel = useAppStore(state => state.aqlLevel);
+    const { t } = useLocale();
 
     const [confirmAction, setConfirmAction] = useState<{open: boolean, title: string, content: string, actionId: string | null}>({
         open: false, title: '', content: '', actionId: null
@@ -313,20 +315,20 @@ export const PageInspection: React.FC = () => {
                         });
                     }
                 } else {
-                    // ── Failed ──
+                    // ── Failed (business logic error: labtest, validation, etc.) ──
                     setResultDialog({
                         open: true,
                         type: 'error',
-                        title: '❌ Submit THẤT BẠI',
-                        content: `Lỗi: ${data.message}\n\nVui lòng kiểm tra kết nối mạng và thử lại.`,
+                        title: `❌ ${t.common.submitFailed}`,
+                        content: data.message || t.common.unknownError,
                     });
                 }
             } catch (e: any) {
                 setResultDialog({
                     open: true,
                     type: 'error',
-                    title: '❌ Submit THẤT BẠI',
-                    content: `Lỗi kết nối: ${String(e)}\n\nVui lòng kiểm tra kết nối mạng và thử lại.`,
+                    title: `❌ ${t.common.submitFailed}`,
+                    content: `${t.common.networkError} ${String(e)}`,
                 });
             } finally {
                 setSubmittingPivot(false);
@@ -339,7 +341,7 @@ export const PageInspection: React.FC = () => {
             sx={{
                 display: 'flex',
                 flexDirection: 'column',
-                height: '100vh',
+                height: '100%',
                 width: '100%',
                 overflow: 'hidden',
                 backgroundColor: (t) => t.color?.background?.o1 || '#F5F5F9',

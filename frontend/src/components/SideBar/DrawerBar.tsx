@@ -63,9 +63,53 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
     }),
 );
 
+const DrawerContent = memo(({ isOpen, toggle }: { isOpen: boolean; toggle: () => void }) => (
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: drawerWidth }}>
+        <DrawerHeader isOpen={isOpen}>
+            {isOpen && (
+                <Typography sx={{ ml: 1, fontWeight: 800, color: (t: any) => t.color?.primary?.main || '#2e7d32' }}>
+                    TRAX QC
+                </Typography>
+            )}
+            <IconButton onClick={toggle}>
+                {isOpen ? <MenuOpen color='primary' /> : <MenuOutlined color='primary' />}
+            </IconButton>
+        </DrawerHeader>
+        <Divider sx={{ borderColor: (theme: any) => theme.color?.background?.o5 || '#e0e0e0' }} />
+        
+        <Box sx={{ flexGrow: 1 }}>
+            <DrawerListMenuItem
+                isDrawerOpen={true}
+                openCollapse={false}
+                toggleCollapse={() => {}}
+            />
+        </Box>
+        
+        <Box sx={{ p: 2, textAlign: 'center' }}>
+            <Typography sx={{ fontWeight: 'bold', fontSize: '11px', color: '#666' }}>
+                {VERSION}
+            </Typography>
+        </Box>
+    </Box>
+));
+
 const MemoizedDrawer = memo(({ isOpen, toggle, isMobile }: { isOpen: boolean; toggle: () => void; isMobile: boolean }) => {
+    if (isMobile) {
+        return (
+            <MuiDrawer
+                variant="temporary"
+                open={isOpen}
+                onClose={toggle}
+                ModalProps={{ keepMounted: true }}
+                sx={{ '& .MuiDrawer-paper': { width: drawerWidth } }}
+            >
+                <DrawerContent isOpen={true} toggle={toggle} />
+            </MuiDrawer>
+        );
+    }
+
     return (
-        <Drawer variant={isMobile ? (isOpen ? "temporary" : "permanent") : "permanent"} open={isOpen} onClose={toggle}>
+        <Drawer variant="permanent" open={isOpen}>
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <DrawerHeader isOpen={isOpen}>
                     {isOpen && (
@@ -96,7 +140,7 @@ const MemoizedDrawer = memo(({ isOpen, toggle, isMobile }: { isOpen: boolean; to
                 </Box>
             </Box>
         </Drawer>
-    )
+    );
 });
 
 export default function DrawerBar({ children }: { children: React.ReactNode }) {

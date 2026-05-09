@@ -350,26 +350,7 @@ export const DefectList: React.FC = () => {
                 </List>
             </Box>
 
-            {/* ── Submit Button ── */}
-            <Button
-                variant="contained"
-                fullWidth
-                startIcon={<SendIcon />}
-                sx={{
-                    backgroundColor: (t) => t.color?.primary?.o5 || '#39B54A',
-                    color: '#fff',
-                    fontWeight: 700,
-                    py: 1.5,
-                    fontSize: '16px',
-                    textTransform: 'none',
-                    borderRadius: '4px',
-                    '&:hover': {
-                        backgroundColor: (t) => t.color?.primary?.o6 || '#27A338',
-                    },
-                }}
-            >
-                Submit Inspection
-            </Button>
+            {/* Submit Button removed per user request */}
 
             {/* ════════════════════════════════════════ */}
             {/* ── Add Defect Dialog ───────────────── */}

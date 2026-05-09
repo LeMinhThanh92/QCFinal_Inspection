@@ -1,8 +1,8 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+﻿import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.trax.sampleroomdigital',
-  appName: 'QCFinal Inspection',
+  appId: 'com.trax.QCFinal',
+  appName: 'Sample Room Digital',
   webDir: '../frontend/dist',
   server: {
     url: 'http://172.17.100.199:7780/',

@@ -55,6 +55,9 @@ export const en: TranslationKeys = {
     loadFailed: 'Failed to load data!',
     ok: 'OK',
     close: 'Close',
+    submitFailed: 'Submit Failed',
+    unknownError: 'Unknown Error',
+    networkError: 'Network Error',
   },
   calendar: {
     january: 'January',

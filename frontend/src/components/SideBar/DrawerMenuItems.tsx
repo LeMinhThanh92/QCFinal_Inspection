@@ -5,6 +5,7 @@ import ChecklistIcon from '@mui/icons-material/Checklist';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import HomeIcon from '@mui/icons-material/Home';
+import EventNoteIcon from '@mui/icons-material/EventNote';
 import { Theme } from "@mui/material";
 
 interface Props {
@@ -55,6 +56,7 @@ export default function DrawerListMenuItem({ isDrawerOpen }: Props) {
 
     const menuItems = [
         { key: 'inspection', label: 'QC Inspection', icon: <ChecklistIcon fontSize="small" />, path: '/' },
+        { key: 'po-today', label: 'PO Inspection Today', icon: <EventNoteIcon fontSize="small" />, path: '/po-today' },
         { key: 'moisture', label: 'Moisture', icon: <WaterDropIcon fontSize="small" />, path: '/moisture' },
         { key: 'moisture-report', label: 'Moisture Report', icon: <AssessmentIcon fontSize="small" />, path: '/moisture-report' },
     ];

@@ -55,6 +55,9 @@ export const th: TranslationKeys = {
     loadFailed: 'โหลดข้อมูลไม่สำเร็จ!',
     ok: 'ตกลง',
     close: 'ปิด',
+    submitFailed: 'ส่งล้มเหลว',
+    unknownError: 'ข้อผิดพลาดที่ไม่รู้จัก',
+    networkError: 'ข้อผิดพลาดของเครือข่าย:',
   },
   calendar: {
     january: 'มกราคม', february: 'กุมภาพันธ์', march: 'มีนาคม', april: 'เมษายน',

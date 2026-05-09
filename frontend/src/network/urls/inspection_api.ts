@@ -8,6 +8,14 @@ export const getSearchPo_api = (poNumber: string, factory: string) => {
     });
 };
 
+export const getCheckSampleSize_api = (aqlLv: string, qtyTotal: string) => {
+    return request({
+        url: '/api/inspection/check-sample-size',
+        method: 'GET',
+        params: { aqlLv, qtyTotal },
+    });
+};
+
 export const getDefectTypes_api = () => {
     return request({
         url: '/api/inspection/defect-types',
@@ -250,6 +258,30 @@ export const clearPo_api = (data: ClearPoRequest) => {
         url: '/api/inspection/clear-po',
         method: 'POST',
         data: data,
+    });
+};
+
+export const getMoisture_api = (recNo: string) => {
+    return request({
+        url: '/api/inspection/moisture',
+        method: 'GET',
+        params: { recNo }
+    });
+};
+
+export const saveMoisture_api = (recNo: string, rows: any[]) => {
+    return request({
+        url: '/api/inspection/save-moisture',
+        method: 'POST',
+        data: { recNo, rows }
+    });
+};
+
+export const getPoToday_api = (factory: string) => {
+    return request({
+        url: '/api/inspection/po-today',
+        method: 'GET',
+        params: { factory }
     });
 };
 

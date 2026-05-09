@@ -6,8 +6,9 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import LogoutIcon from '@mui/icons-material/Logout';
+import MenuIcon from '@mui/icons-material/Menu';
 import DialogFullScreen from '@/components/Dialog/Dialog';
-import { getSearchPo_api, getLoadImages_api, getRecordedDefects_api, getPlanId_api, getInspectorId_api, getRecNo_api } from '@/network/urls/inspection_api';
+import { getSearchPo_api, getCheckSampleSize_api, getLoadImages_api, getRecordedDefects_api, getPlanId_api, getInspectorId_api, getRecNo_api } from '@/network/urls/inspection_api';
 import { useAppStore } from '@/utils/states/useAppStore';
 import { useAuth } from '@/utils/context/AuthProvider';
 import { toast } from '@/utils/states/state';
@@ -28,6 +29,7 @@ export const AppbarInspection: React.FC = () => {
     const factory = useAppStore(state => state.factory);
     const aqlLevel = useAppStore(state => state.aqlLevel);
     const setAqlLevel = useAppStore(state => state.setAqlLevel);
+    const toggleDrawer = useAppStore(state => state.toggleDrawer);
     const poInfo = useAppStore(state => state.poInfo);
     const setPoInfo = useAppStore(state => state.setPoInfo);
     const clearAllData = useAppStore(state => state.clearAllData);
@@ -160,18 +162,36 @@ export const AppbarInspection: React.FC = () => {
             recNo = '';
         }
 
-        // 4. Update the centralized poInfo state with clean variables
+        // 4. Calculate total qty
+        const totalQty = poItem.QtyTotal || poItem.qtyTotal || poItem.TotalQty || poItem.totalQty || poItem.POQty || 0;
+
+        // 5. Check if sample size needs to be fetched
+        let sampleSize = poItem.SampleSize || poItem.sampleSize || poItem.Sample_Size || poItem.InsQTY || poItem.PlanQty || 0;
+        const inspectorDb = poItem.Inspector || poItem.inspector;
+        
+        if (!inspectorDb || inspectorDb === 'NULL' || inspectorDb === 'N/A') {
+            try {
+                const calculatedSampleSize = await getCheckSampleSize_api(aqlLevel || '', String(totalQty));
+                if (calculatedSampleSize && calculatedSampleSize !== 'N/A') {
+                    sampleSize = calculatedSampleSize;
+                }
+            } catch (e) {
+                console.error('Failed to get sample size', e);
+            }
+        }
+
+        // 6. Update the centralized poInfo state with clean variables
         setPoInfo({
+            ...poItem,
             poNumber: poNo,
             sku: poItem.SKU || poItem.sku,
             supplier: poItem.CompanyName || poItem.supplier,
-            totalQty: poItem.TotalQty || poItem.totalQty || poItem.POQty || 0,
-            sampleSize: poItem.SampleSize || poItem.sampleSize || poItem.Sample_Size || poItem.PlanQty || 0,
+            totalQty: totalQty,
+            sampleSize: sampleSize,
             planRefNo: planRef,
             recNo: recNo,
             planId: planId,
-            inspectorId: inspectorId,
-            ...poItem
+            inspectorId: inspectorId
         });
         
         // Initialize the checklist statuses based on list1, list2, list3 from API
@@ -227,7 +247,20 @@ export const AppbarInspection: React.FC = () => {
             }}>
                 {/* ─── Title & Mobile User Info Row ─── */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {/* Hamburger menu for mobile */}
+                        <IconButton
+                            onClick={toggleDrawer}
+                            sx={{ 
+                                display: { xs: 'flex', lg: 'none' },
+                                color: (t: any) => t.color?.text?.o1 || '#1B2722',
+                                p: 0.5,
+                                mr: 0.5,
+                            }}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                        <Typography
                         sx={{
                             fontWeight: 800,
                             fontSize: { xs: '18px', sm: '20px' },
@@ -243,6 +276,7 @@ export const AppbarInspection: React.FC = () => {
                             {VERSION}
                         </Typography>
                     </Typography>
+                    </Box>
 
                     {/* Show User Info on mobile right beside the title */}
                     <Box sx={{ display: { xs: 'flex', lg: 'none' }, alignItems: 'center', gap: 0.5 }}>

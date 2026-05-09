@@ -34,6 +34,9 @@ export const id: TranslationKeys = {
     loadFailed: 'Gagal memuat data!',
     ok: 'Oke',
     close: 'Tutup',
+    submitFailed: 'Pengiriman Gagal',
+    unknownError: 'Kesalahan Tidak Diketahui',
+    networkError: 'Kesalahan Jaringan:',
   },
   calendar: {
     january: 'Januari', february: 'Februari', march: 'Maret', april: 'April',
