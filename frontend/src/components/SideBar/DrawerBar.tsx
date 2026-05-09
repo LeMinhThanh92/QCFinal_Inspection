@@ -8,6 +8,8 @@ import React, { memo } from "react";
 import { VERSION } from "@/components/constants/version";
 import { useAppStore } from "@/utils/states/useAppStore";
 import { AppbarInspection } from "@/features/inspection/components/AppbarInspection";
+import { AppbarShared } from "@/components/AppBar/AppbarShared";
+import { useLocation } from "react-router-dom";
 
 const drawerWidth = 220;
 
@@ -143,17 +145,23 @@ const MemoizedDrawer = memo(({ isOpen, toggle, isMobile }: { isOpen: boolean; to
     );
 });
 
+/** Routes that require the full AppbarInspection (PO search + AQL toggle) */
+const INSPECTION_ROUTES = ['/', '/inspection', '/moisture', '/po-today'];
+
 export default function DrawerBar({ children }: { children: React.ReactNode }) {
     const isDrawerOpen = useAppStore(state => state.isDrawerOpen);
     const toggleDrawer = useAppStore(state => state.toggleDrawer);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
+    const location = useLocation();
+
+    const showInspectionAppbar = INSPECTION_ROUTES.includes(location.pathname);
 
     return (
         <Box sx={{ display: 'flex', height: '100vh', width: '100%', overflow: 'hidden' }}>
             <MemoizedDrawer isOpen={isDrawerOpen} toggle={toggleDrawer} isMobile={isMobile} />
             <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <AppbarInspection />
+                {showInspectionAppbar ? <AppbarInspection /> : <AppbarShared />}
                 <Box sx={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
                     {children}
                 </Box>

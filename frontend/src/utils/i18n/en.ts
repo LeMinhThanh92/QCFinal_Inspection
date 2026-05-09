@@ -170,4 +170,18 @@ export const en: TranslationKeys = {
     requireLogoLength: 'Enter ≥ 3 characters to search for logo',
     embEmployeePrompt: 'Enter Emp ID (5 chars)...',
   },
+  inspection: {
+    title: 'QC Final Inspection',
+    aqlResetPo: 'Changing AQL will reset current PO',
+    selectAqlFirst: 'Select AQL Level before Loading PO',
+    enterPo: 'Enter PO Number...',
+    loadPo: 'Load PO',
+    missingUserPivot: 'User Pivot is not configured for this user. Please contact the administrator.',
+    pleaseSelectAql: 'Please select an AQL Level first!',
+    pleaseEnterPo: 'Please enter a PO Number',
+    noPoFound: 'No PO found!',
+    selectPoTitle: 'Select PO',
+    confirmAqlChangeTitle: 'Confirm AQL Change',
+    confirmAqlChangeContent: 'Changing the AQL Level will clear current PO data. Are you sure?',
+  },
 };

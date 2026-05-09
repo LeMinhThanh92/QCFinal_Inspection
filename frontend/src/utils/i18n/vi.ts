@@ -168,6 +168,20 @@ export const vi = {
     requireLogoLength: 'Nhập ≥ 3 ký tự để tìm logo',
     embEmployeePrompt: 'Nhập mã NV (5 ký tự)...',
   },
+  inspection: {
+    title: 'QC Final Inspection',
+    aqlResetPo: 'Đổi AQL sẽ reset PO hiện tại',
+    selectAqlFirst: 'Chọn AQL Level trước khi Load PO',
+    enterPo: 'Nhập số PO...',
+    loadPo: 'Load PO',
+    missingUserPivot: 'User này chưa được cập nhật User Pivot. Vui lòng liên hệ quản trị viên.',
+    pleaseSelectAql: 'Vui lòng chọn AQL Level trước!',
+    pleaseEnterPo: 'Vui lòng nhập số PO',
+    noPoFound: 'Không tìm thấy PO nào!',
+    selectPoTitle: 'Chọn PO',
+    confirmAqlChangeTitle: 'Xác nhận thay đổi AQL',
+    confirmAqlChangeContent: 'Đổi AQL Level sẽ xóa dữ liệu PO hiện tại. Bạn có chắc không?',
+  },
 };
 
 export type TranslationKeys = typeof vi;
