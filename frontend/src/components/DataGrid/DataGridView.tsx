@@ -114,8 +114,13 @@ interface DataGridViewProps extends DataGridProps {
     editable?: boolean;
 }
 
+import { useDragToScroll } from "@/hooks/feature_shared/useDragToScroll";
+
 export function DataGridView(props: DataGridViewProps) {
     const { highlightRow, highlightCell, editable = false, ...otherProps } = props;
+    
+    // Attach drag to scroll to the virtual scroller of the datagrid
+    const scrollRef = useDragToScroll('.MuiDataGrid-virtualScroller');
 
     const getDefaultRowClassName = (params: GridRowClassNameParams) => {
         if (highlightRow && highlightRow(params.row)) {
@@ -132,7 +137,9 @@ export function DataGridView(props: DataGridViewProps) {
     };
 
     return (
-        <Box sx={{
+        <Box 
+            ref={scrollRef}
+            sx={{
             height: props.height ? props.height : '75vh',
             scrollbarWidth: 'none',
             '& .MuiDataGrid-filler': {

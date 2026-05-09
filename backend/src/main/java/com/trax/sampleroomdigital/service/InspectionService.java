@@ -1276,4 +1276,33 @@ public class InspectionService {
         String sql = "exec DtradeProduction.dbo.QCFinal 'checkposubmit', ?, '', '', '', '', ''";
         return jdbcTemplate.queryForList(sql, factory != null ? factory : "");
     }
+    public List<Map<String, Object>> getMoistureReport(String factory, String fromDate, String toDate) {
+        String sql = "exec DtradeProduction.dbo.QCFinal 'moistute_all', ?, ?, ?, '', '', ''";
+        try {
+            return jdbcTemplate.queryForList(sql, factory, fromDate, toDate);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    public List<Map<String, Object>> getInspectionReport(String factory, String fromDate, String toDate) {
+        String sql = "exec DtradeProduction.dbo.QCFinal 'report_excel', ?, ?, ?, '', '', ''";
+        try {
+            return jdbcTemplate.queryForList(sql, factory, fromDate, toDate);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    public List<Map<String, Object>> getCtqReport(String factory, String fromDate, String toDate) {
+        String sql = "exec DtradeProduction.dbo.QCFinal 'reportCTQ', ?, ?, ?, '', '', ''";
+        try {
+            return jdbcTemplate.queryForList(sql, factory, fromDate, toDate);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
 }

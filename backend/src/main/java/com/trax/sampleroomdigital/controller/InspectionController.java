@@ -299,4 +299,34 @@ public class InspectionController {
         List<Map<String, Object>> result = inspectionService.getPoToday(factory);
         return ApiResponse.success(result);
     }
+
+    @GetMapping("/moisture-report")
+    public ApiResponse<List<Map<String, Object>>> moistureReport(
+            @RequestParam("factory") String factory,
+            @RequestParam("fromDate") String fromDate,
+            @RequestParam("toDate") String toDate
+    ) {
+        List<Map<String, Object>> result = inspectionService.getMoistureReport(factory, fromDate, toDate);
+        return ApiResponse.success(result);
+    }
+
+    @GetMapping("/inspection-report")
+    public ApiResponse<List<Map<String, Object>>> inspectionReport(
+            @RequestParam("factory") String factory,
+            @RequestParam("fromDate") String fromDate,
+            @RequestParam("toDate") String toDate
+    ) {
+        List<Map<String, Object>> result = inspectionService.getInspectionReport(factory, fromDate, toDate);
+        return ApiResponse.success(result);
+    }
+
+    @GetMapping("/ctq-report")
+    public ApiResponse<List<Map<String, Object>>> ctqReport(
+            @RequestParam("factory") String factory,
+            @RequestParam("fromDate") String fromDate,
+            @RequestParam("toDate") String toDate
+    ) {
+        List<Map<String, Object>> result = inspectionService.getCtqReport(factory, fromDate, toDate);
+        return ApiResponse.success(result);
+    }
 }

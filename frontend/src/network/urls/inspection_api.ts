@@ -285,4 +285,28 @@ export const getPoToday_api = (factory: string) => {
     });
 };
 
+export const getMoistureReport_api = (factory: string, fromDate: string, toDate: string) => {
+    return request({
+        url: '/api/inspection/moisture-report',
+        method: 'GET',
+        params: { factory, fromDate, toDate }
+    });
+};
+
+export const getInspectionReport_api = (factory: string, fromDate: string, toDate: string) => {
+    return request({
+        url: '/api/inspection/inspection-report',
+        method: 'GET',
+        params: { factory, fromDate, toDate }
+    });
+};
+
+export const getCtqReport_api = (factory: string, fromDate: string, toDate: string) => {
+    return request({
+        url: '/api/inspection/ctq-report',
+        method: 'GET',
+        params: { factory, fromDate, toDate }
+    });
+};
+
 

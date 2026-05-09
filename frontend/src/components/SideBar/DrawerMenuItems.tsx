@@ -59,6 +59,8 @@ export default function DrawerListMenuItem({ isDrawerOpen }: Props) {
         { key: 'po-today', label: 'PO Inspection Today', icon: <EventNoteIcon fontSize="small" />, path: '/po-today' },
         { key: 'moisture', label: 'Moisture', icon: <WaterDropIcon fontSize="small" />, path: '/moisture' },
         { key: 'moisture-report', label: 'Moisture Report', icon: <AssessmentIcon fontSize="small" />, path: '/moisture-report' },
+        { key: 'inspection-report', label: 'Inspection Report', icon: <AssessmentIcon fontSize="small" />, path: '/inspection-report' },
+        { key: 'ctq-report', label: 'CTQ Report', icon: <AssessmentIcon fontSize="small" />, path: '/ctq-report' },
     ];
 
     return (
