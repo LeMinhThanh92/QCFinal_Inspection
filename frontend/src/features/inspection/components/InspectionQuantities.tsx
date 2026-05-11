@@ -1,12 +1,12 @@
 import React from 'react';
-import { Box, Typography, Button, CircularProgress, TextField, Dialog, DialogTitle, DialogContent, DialogActions, useTheme } from '@mui/material';
+import { Box, Typography, Button, CircularProgress, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { useInspectionQuantities } from '@/hooks/feature_inspection/useInspectionQuantities';
 
 // ══════════════════════════════════════════════════════
 // ── Section 9: Inspection Quantities ─────────────────
 // ══════════════════════════════════════════════════════
 export const InspectionQuantities: React.FC = () => {
-    const theme = useTheme();
+
     const {
         poInfo,
         cartonDialogOpen, setCartonDialogOpen,

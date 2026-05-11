@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Chip, IconButton, useTheme, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import { Box, Typography, Chip, IconButton, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import AddAPhotoIcon from '@mui/icons-material/AddAPhoto';
 import { usePhotoSection, PHOTO_CATEGORIES } from '@/hooks/feature_inspection/usePhotoSection';
@@ -8,7 +8,7 @@ import { usePhotoSection, PHOTO_CATEGORIES } from '@/hooks/feature_inspection/us
 // ── Section 10: Photos ───────────────────────────────
 // ══════════════════════════════════════════════════════
 export const PhotoSection: React.FC = () => {
-    const theme = useTheme();
+
     const {
         images,
         fileInputRef,

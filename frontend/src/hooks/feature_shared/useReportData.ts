@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAppStore } from '@/utils/states/useAppStore';
+import { useReportStore } from '@/utils/states/useReportStore';
 import { useExportExcel } from '@/hooks/feature_shared/useExportExcel';
 import { toast } from '@/utils/states/state';
 
@@ -42,24 +43,42 @@ const addOneDay = (dateStr: string): string => {
 interface UseReportDataOptions {
     /** The API function to call: (factory, fromDate, toDate) => Promise<any[]> */
     fetchApi: (factory: string, fromDate: string, toDate: string) => Promise<any>;
-    /** Prefix for the exported Excel filename */
+    /** Prefix for the exported Excel filename — also used as Zustand cache key */
     exportFilePrefix: string;
 }
 
 /**
  * Shared hook that manages report state, data fetching, date formatting, and Excel export.
+ * Data is persisted in Zustand store so it survives page navigation.
  * Used by all report pages (Moisture, Inspection, CTQ, etc.).
  */
 export const useReportData = ({ fetchApi, exportFilePrefix }: UseReportDataOptions) => {
     const factory = useAppStore(state => state.factory);
 
+    // Read cached state from Zustand store
+    const cached = useReportStore(state => state.reports[exportFilePrefix]);
+    const setReportData = useReportStore(state => state.setReportData);
+    const setReportDates = useReportStore(state => state.setReportDates);
+
     const today = new Date().toISOString().split('T')[0];
-    const [fromDate, setFromDate] = useState(today);
-    const [toDate, setToDate] = useState(today);
-    const [data, setData] = useState<any[]>([]);
+
+    // Dates: use cached values if available, otherwise default to today
+    const fromDate = cached?.fromDate ?? today;
+    const toDate = cached?.toDate ?? today;
+    // Data: use cached values if available
+    const data = cached?.data ?? [];
+
     const [loading, setLoading] = useState(false);
 
     const { isLoadingData: isExporting, exportToExcel } = useExportExcel();
+
+    const setFromDate = (v: string) => {
+        setReportDates(exportFilePrefix, v, toDate);
+    };
+
+    const setToDate = (v: string) => {
+        setReportDates(exportFilePrefix, fromDate, v);
+    };
 
     const handleLoadData = async (t: any) => {
         if (!fromDate || !toDate) {
@@ -72,7 +91,8 @@ export const useReportData = ({ fetchApi, exportFilePrefix }: UseReportDataOptio
             const res = await fetchApi(factory, fromDate, apiToDate);
             let formattedData = Array.isArray(res) ? res : [];
             formattedData = formatDateFields(formattedData);
-            setData(formattedData);
+            // Save to Zustand store (persists across navigation)
+            setReportData(exportFilePrefix, formattedData, fromDate, toDate);
             if (res && res.length === 0) {
                 toast.value = { ...toast.value, message: t.common.noData, type: 'info' };
             }
