@@ -9,7 +9,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { useAppStore } from '@/utils/states/useAppStore';
 import ConfirmDialog from '@/components/Dialog/ConfirmDialog';
 import { VERSION } from '@/components/constants/version';
-import { useAppbarInspection } from '../hooks/useAppbarInspection';
+import { useAppbarInspection } from '@/hooks/feature_inspection/useAppbarInspection';
 import { PoSelectionDialog } from './Appbar/PoSelectionDialog';
 
 export const AppbarInspection: React.FC = () => {
