@@ -130,3 +130,27 @@ Hoặc mở `services.msc` → tìm:
 
 > [!CAUTION]
 > **Không chạy `start.ps1` song song với services!** Sẽ bị trùng port 6664/7780.
+
+---
+
+## Quy Trình Cập Nhật (Update) Bản Mới
+
+Khi có thay đổi code và cần đẩy lên server, bạn **không cần cài lại Service**. Hãy làm theo các bước sau:
+
+1. **Build bản mới** trên máy dev (`.\build.ps1`)
+2. **Copy ZIP** lên server.
+3. **Stop Services đang chạy** (Quan trọng! Nếu không stop, Windows sẽ không cho ghi đè file `.jar` vì đang được sử dụng):
+   - Mở `services.msc`, tìm `QCFinal-Backend` và `QCFinal-Frontend`, nhấn chuột phải chọn **Stop**.
+   - HOẶC mở PowerShell (Admin) và chạy: 
+     ```powershell
+     Stop-Service QCFinal-Backend
+     Stop-Service QCFinal-Frontend
+     ```
+4. **Giải nén file ZIP mới**, copy đè thư mục `backend\` và `frontend\` vào thư mục đang chạy (ví dụ `C:\QCFinal\QCFinal-release\`).
+5. **Start Services trở lại**:
+   - Mở `services.msc`, tìm `QCFinal-Backend` và `QCFinal-Frontend`, nhấn chuột phải chọn **Start**.
+   - HOẶC chạy PowerShell (Admin):
+     ```powershell
+     Start-Service QCFinal-Backend
+     Start-Service QCFinal-Frontend
+     ```
