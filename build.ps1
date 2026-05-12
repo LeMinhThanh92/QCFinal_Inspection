@@ -184,6 +184,39 @@ foreach ($script in @("start.ps1", "start-backend.ps1", "start-frontend.ps1")) {
     }
 }
 
+# Copy services-* files (Windows Service setup)
+foreach ($svcFile in @(
+    "services-install.ps1",
+    "services-uninstall.ps1",
+    "services-status.ps1",
+    "services-rotate-logs.ps1",
+    "services-logback-spring.xml"
+)) {
+    $svcPath = Join-Path $ProjectRoot $svcFile
+    if (Test-Path $svcPath) {
+        Copy-Item $svcPath -Destination $ReleaseDir
+        Write-Host "  -> $svcFile" -ForegroundColor Gray
+    }
+}
+
+# Create logs directories (pre-created so services can write immediately)
+$logsBackend  = Join-Path $ReleaseDir "logs\backend"
+$logsFrontend = Join-Path $ReleaseDir "logs\frontend"
+New-Item -ItemType Directory -Path $logsBackend  -Force | Out-Null
+New-Item -ItemType Directory -Path $logsFrontend -Force | Out-Null
+
+# Add README placeholders (ZIP cannot store empty folders)
+$logsReadme = @"
+QCFinal Logs
+============
+backend\   - Spring Boot application logs (daily rotation via Logback)
+frontend\  - serve stdout/stderr logs (rotation via NSSM)
+
+Log files older than 30 days are auto-deleted by services-rotate-logs.ps1
+"@
+[System.IO.File]::WriteAllText((Join-Path $ReleaseDir "logs\README.txt"), $logsReadme)
+Write-Host "  -> logs\backend\ + logs\frontend\ (pre-created)" -ForegroundColor Gray
+
 Write-Host "  -> Assembly complete" -ForegroundColor Green
 
 # ── 5. Create ZIP ────────────────────────────────────────
